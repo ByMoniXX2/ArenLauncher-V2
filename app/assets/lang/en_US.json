@@ -1,0 +1,49 @@
+{
+    "html": {
+        "avatarOverlay": "Editar"
+    },
+    "js": {
+        "login": {
+            "error": {
+                "invalidValue": "* Valor incorrecto",
+                "requiredValue": "* Requerido",
+                "userMigrated": {
+                    "title": "Error durante el logueo:<br>Credenciales invalidas!",
+                    "desc": "Intentaste ingresar con una cuenta migrada. Intenta nuevamente con tu EMAIL."
+                },
+                "invalidCredentials": {
+                    "title": "Error durante el logueo:<br>Credenciales invalidas!",
+                    "desc": "El E-Mail o contraseña que ingresaste es incorrecto. Por favor, intentalo de nuevo ."
+                },
+                "rateLimit": {
+                    "title": "Error durante el logueo:<br>Demasiados intentos",
+                    "desc": "Hubo demasiados intentos de iniciar sesion con esta cuenta recientemente. Por favor, intentalo mas tarde."
+                },
+                "noInternet": {
+                    "title": "Error durante el logueo:<br>No hay conexion a internet",
+                    "desc": "Debes estar conectado a Internet para poder loguearte. Conectate e intentalo otra vez!."
+                },
+                "authDown": {
+                    "title": "Error durante el logueo:<br>Servidor de autentificacion caido",
+                    "desc": "Los servidores de Mojang estan caidos o no se pudo conectar!. Podes revisar el estado en <a href=\"https://help.mojang.com/\">el portal de ayuda de Mojang</a>."
+                },
+                "notPaid": {
+                    "title": "Error durante el logueo:<br>Minecraft no comprado (Cuenta de Microsoft?)",
+                    "desc": "La cuenta con la que intentaste ingresar no compro Minecraft o es una cuenta de Microsoft.<br>Podes comprarlo en <a href=\"https://minecraft.net/\">Minecraft.net</a>"
+                },
+                "unknown": {
+                    "title": "Error durante el logueo:<br>Error desconocido."
+                }
+            },
+            "login": "INGRESAR",
+            "loggingIn": "INGRESANDO",
+            "success": "EXITO",
+            "tryAgain": "Intentalo denuevo"
+        },
+        "landing": {
+            "launch": {
+                "pleaseWait": "Por favor, espera..."
+            }
+        }
+    }
+}
