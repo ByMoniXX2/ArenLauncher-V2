@@ -328,7 +328,7 @@ function asyncSystemScan(mcVersion, launchAfter = true){
                 // Show this information to the user.
                 setOverlayContent(
                     'No se encontro<br>una instalacion de Java compatible',
-                    'Para entrar a Farfania, necesitas una instalacion de 64 bits de java 8. Queres que te instalemos una copia? Al instalar, aceptas <a href="http://www.oracle.com/technetwork/java/javase/terms/license/index.html">los terminos y condiciones de Oracle.</a>.',
+                    'Para entrar a Aren, necesitas una instalacion de 64 bits de java 8. Queres que te instalemos una copia? Al instalar, aceptas <a href="http://www.oracle.com/technetwork/java/javase/terms/license/index.html">los terminos y condiciones de Oracle.</a>.',
                     'Instalar java',
                     'Instalar manualmente'
                 )
@@ -525,12 +525,12 @@ function dlAsync(login = true){
     })
     aEx.on('error', (err) => {
         loggerLaunchSuite.error('Error durante el lanzamiento', err)
-        showLaunchFailure('Error durante el lanzamiento', err.message || 'Revisa la consola (CTRL + i) para mas detalles y reportalo a Chesvin1!.')
+        showLaunchFailure('Error durante el lanzamiento', err.message || 'Revisa la consola (CTRL + i) para mas detalles y reportalo a ByMoniXX!.')
     })
     aEx.on('close', (code, signal) => {
         if(code !== 0){
             loggerLaunchSuite.error(`AssetExec exited with code ${code}, assuming error.`)
-            showLaunchFailure('Error durante el lanzamiento', 'Revisa la consola (CTRL + i) para mas detalles y reportalo a Chesvin1!')
+            showLaunchFailure('Error durante el lanzamiento', 'Revisa la consola (CTRL + i) para mas detalles y reportalo a ByMoniXX!')
         }
     })
 
@@ -686,9 +686,9 @@ function dlAsync(login = true){
                 const gameStateChange = function(data){
                     data = data.trim()
                     if(SERVER_JOINED_REGEX.test(data)){
-                        DiscordWrapper.updateDetails('En la aduana...')
+                        DiscordWrapper.updateDetails('En el Pueblo...')
                     } else if(GAME_JOINED_REGEX.test(data)){
-                        DiscordWrapper.updateDetails('Laburando en el pais')
+                        DiscordWrapper.updateDetails('En el Pueblo')
                     }
                 }
 
@@ -708,7 +708,7 @@ function dlAsync(login = true){
                     proc.stdout.on('data', tempListener)
                     proc.stderr.on('data', gameErrorListener)
 
-                    setLaunchDetails('Listo. Disfruta de Farfania!')
+                    setLaunchDetails('Listo. Disfruta de Aren Server!')
 
                     // Init Discord Hook
                     const distro = DistroManager.getDistribution()
@@ -755,7 +755,7 @@ function dlAsync(login = true){
         }, (err) => {
             loggerLaunchSuite.error('Fallo al intentar recargar el distribution index.', err)
             if(DistroManager.getDistribution() == null){
-                showLaunchFailure('Error fatal', 'Fallo al intentar recargar el distribution index!!!!. Contactate con Chesvin1 urgentemente.')
+                showLaunchFailure('Error fatal', 'Fallo al intentar recargar el distribution index!!!!. Contactate con ByMoniXX urgentemente.')
 
                 // Disconnect from AssetExec
                 aEx.disconnect()

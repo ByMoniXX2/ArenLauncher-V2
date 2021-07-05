@@ -1,9 +1,9 @@
 {
-  "name": "farfanialauncher",
+  "name": "arenlauncher",
   "version": "1.9.0",
-  "productName": "Farfania Launcher",
-  "description": "Launcher para suscriptores de Twitch de Farfadox",
-  "author": "Chesvin1 (https://github.com/Chesvin1/)",
+  "productName": "Aren Launcher",
+  "description": "Launcher Para Streamers De Twitch",
+  "author": "ByMoniXX (https://github.com/ByMoniXX2)",
   "license": "UNLICENSED",
   "homepage": "https://github.com/dzcalzi/HeliosLauncher",
   "bugs": {
@@ -27,7 +27,7 @@
   "dependencies": {
     "adm-zip": "^0.5.1",
     "async": "^3.2.0",
-    "discord-rpc": "^3.1.4",
+    "discord-rpc": "^3.2.0",
     "ejs": "^3.1.5",
     "ejs-electron": "^2.1.1",
     "electron-updater": "^4.3.5",
@@ -43,8 +43,8 @@
   },
   "devDependencies": {
     "cross-env": "^7.0.2",
-    "electron": "^11.0.4",
-    "electron-builder": "^22.9.1",
+    "electron": "^11.4.7",
+    "electron-builder": "^22.11.5",
     "eslint": "^7.15.0"
   },
   "repository": {

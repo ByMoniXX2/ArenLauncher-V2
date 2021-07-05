@@ -28,7 +28,7 @@ window.eval = global.eval = function () {
 remote.getCurrentWebContents().on('devtools-opened', () => {
     console.log('%cLa consola es oscura y llena de terrores.', 'color: white; -webkit-text-stroke: 4px #a02d2a; font-size: 60px; font-weight: bold')
     console.log('%cSi alguien te dijo que pegues algo aca, no le des bola.', 'font-size: 16px')
-    console.log('%cA menos que Chesvin1 te lo haya dicho xd.', 'font-size: 16px')
+    console.log('%cA menos que ByMoniXX te lo haya dicho xd.', 'font-size: 16px')
 })
 
 // Disable zoom, needed for darwin.

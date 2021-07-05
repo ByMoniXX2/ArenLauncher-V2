@@ -110,7 +110,7 @@ function showFatalStartupError(){
             document.getElementById('overlayContainer').style.background = 'none'
             setOverlayContent(
                 'Error fatal: Fallo al intentar cargar el distribution index.',
-                'Hubo un fallo de conexion con el servidor de distribucion de Farfania. No se pudo descargar ningun archivo!. <br><br>El Distribution index, provee al launcher la informacion acerca de los mods del server. Si queres una solucion rapida, en los mensajes fijados de Discord en el canal de #consultas hay una serie de pasos para arreglarlo rapidamente!',
+                'Hubo un fallo de conexion con el servidor de distribucion de Aren Server. No se pudo descargar ningun archivo!. <br><br>El Distribution index, provee al launcher la informacion acerca de los mods del server. Si queres una solucion rapida, en los mensajes fijados de Discord en el canal de #consultas hay una serie de pasos para arreglarlo rapidamente!',
                 'Cerrar'
             )
             setOverlayHandler(() => {
