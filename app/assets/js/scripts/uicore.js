@@ -48,7 +48,7 @@ if(!isDev){
                 loggerAutoUpdaterSuccess.log('Nueva actualizacion disponible', info.version)
                 
                 if(process.platform === 'darwin'){
-                    info.darwindownload = `https://github.com/Chesvin1/FarfaniaLauncherLauncher/releases/download/v${info.version}/farfanialauncher-setup-${info.version}.dmg`
+                    info.darwindownload = `https://github.com/ByMoniXX2/ArenLauncher-V2/releases/download/v${info.version}/Aren.Launcher-setup-${info.version}.dmg`
                     showUpdateUI(info)
                 }
                 
