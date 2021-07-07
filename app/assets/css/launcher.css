@@ -8,18 +8,18 @@
  ******************************************************************************/
 
 @font-face {
-    font-family: 'Avenir Book';
-    src: url('../fonts/Avenir-Book.ttf');
+    font-family: 'Old London';
+    src: url('../fonts/OldLondon.ttf');
 }
 
 @font-face {
-    font-family: 'Avenir Medium';
-    src: url('../fonts/Avenir-Medium.ttf');
+    font-family: 'Old London';
+    src: url('../fonts/OldLondon.ttf');
 }
 
 @font-face {
-    font-family: 'Ringbearer';
-    src: url('../fonts/Ringbearer.ttf');
+    font-family: 'Old London';
+    src: url('../fonts/OldLondon.ttf');
 }
 
 /*******************************************************************************
@@ -42,7 +42,7 @@ p {
 
 /* Set default font and color. */
 body, button {
-    font-family: 'Avenir Book';
+    font-family: 'Old London';
     color: white;
 }
 
@@ -110,7 +110,7 @@ body, button {
 }
 #frameTitleText {
     font-size: 14px;
-    font-family: 'Avenir Medium';
+    font-family: 'Old London';
     letter-spacing: 0.5px;
 }
 
@@ -283,7 +283,7 @@ body, button {
 }
 
 #welcomeHeader {
-    font-family: 'Avenir Medium';
+    font-family: 'Old London';
     text-align: center;
     color: white;
     margin-bottom: 25px;
@@ -496,7 +496,7 @@ body, button {
 
 /* Header on login view. */
 #loginSubheader {
-    font-family: 'Avenir Medium';
+    font-family: 'Old London';
     margin-bottom: 25px;
     font-size: 12px;
     letter-spacing: 1px;
@@ -521,7 +521,7 @@ body, button {
 
 /* Span which displays errors related to login field content. */
 .loginErrorSpan {
-    font-family: 'Avenir Medium';
+    font-family: 'Old London';
     font-weight: bold;
     font-size: 8px;
     color: #ff1b0c;
@@ -557,7 +557,7 @@ body, button {
 
 /* Login text input styles. */
 .loginField {
-    font-family: 'Avenir Book';
+    font-family: 'Old London';
     background: none;
     border-width: 1.5px 0px 0px 0px;
     border-style: solid;
@@ -1052,7 +1052,7 @@ body, button {
 }
 .settingsTabHeaderText {
     font-size: 20px;
-    font-family: 'Avenir Medium';
+    font-family: 'Old London';
 }
 .settingsTabHeaderDesc {
     font-size: 12px;
@@ -1070,7 +1070,7 @@ body, button {
     background: rgba(0, 0, 0, 0.25);
     border-radius: 3px;
     border: 1px solid rgba(126, 126, 126, 0.57);
-    font-family: 'Avenir Book';
+    font-family: 'Old London';
     transition: 0.25s ease;
 }
 #settingsContainer input[type=number]:focus,
@@ -1099,7 +1099,7 @@ body, button {
 }
 .settingsFieldTitle {
     font-size: 14px;
-    font-family: 'Avenir Medium';
+    font-family: 'Old London';
     color: rgba(255, 255, 255, 0.95);
 }
 .settingsFieldDesc {
@@ -1277,7 +1277,7 @@ input:checked + .toggleSwitchSlider:before {
     width: 89%;
 }
 .settingsFileSelDesc strong {
-    font-family: 'Avenir Medium';
+    font-family: 'Old London';
 }
 
 /* * *
@@ -1365,7 +1365,7 @@ input:checked + .toggleSwitchSlider:before {
     font-size: 12px;
     color: grey;
     font-weight: bold;
-    font-family: 'Avenir Medium';
+    font-family: 'Old London';
 }
 .settingsAuthAccountDetailValue {
     font-size: 14px;
@@ -1387,7 +1387,7 @@ input:checked + .toggleSwitchSlider:before {
     border: none;
     white-space: nowrap;
     background: none;
-    font-family: 'Avenir Medium';
+    font-family: 'Old London';
     outline: none;
     transition: 0.25s ease;
 }
@@ -1412,7 +1412,7 @@ input:checked + .toggleSwitchSlider:before {
     background: none;
     font-size: 12px;
     border-radius: 3px;
-    font-family: 'Avenir Medium';
+    font-family: 'Old London';
     transition: 0.25s ease;
     cursor: pointer;
     outline: none;
@@ -1496,7 +1496,7 @@ input:checked + .toggleSwitchSlider:before {
     background: none;
     font-size: 12px;
     border-radius: 3px;
-    font-family: 'Avenir Medium';
+    font-family: 'Old London';
     transition: 0.25s ease;
     cursor: pointer;
     outline: none;
@@ -2020,7 +2020,7 @@ input:checked + .toggleSwitchSlider:before {
 /* Release type text. */
 #settingsAboutCurrentVersionTitle {
     font-size: 12px;
-    font-family: 'Avenir Medium';
+    font-family: 'Old London';
     color: #23aa23;
     font-weight: bold;
 }
@@ -2109,7 +2109,7 @@ input:checked + .toggleSwitchSlider:before {
     background-color: rgba(255, 255, 255, 0.25);
     color: white;
     border-radius: 3px;
-    font-family: 'Avenir Book';
+    font-family: 'Old London';
 }
 .settingsChangelogText li+li {
     margin-top: .25em;
@@ -2219,7 +2219,7 @@ input:checked + .toggleSwitchSlider:before {
 /* Release type text. */
 #settingsUpdateVersionTitle {
     font-size: 12px;
-    font-family: 'Avenir Medium';
+    font-family: 'Old London';
     color: #23aa23;
     font-weight: bold;
 }
@@ -2418,7 +2418,7 @@ input:checked + .toggleSwitchSlider:before {
 #newsArticleTitle {
     font-size: 18px;
     font-weight: bold;
-    font-family: 'Avenir Medium';
+    font-family: 'Old London';
     color: white;
     text-decoration: none;
     transition: 0.25s ease;
@@ -2735,7 +2735,7 @@ input:checked + .toggleSwitchSlider:before {
     z-index: 1;
     top: 115%;
     left: -17.5px;
-    font-family: 'Avenir Medium';
+    font-family: 'Old London';
     font-size: 12px;
     transition: visibility 0s linear 0.25s, opacity 0.25s ease;
 }
@@ -3067,7 +3067,7 @@ input:checked + .toggleSwitchSlider:before {
     border-radius: 4px;
     padding: 5px 10px;
     z-index: 1;
-    font-family: 'Avenir Medium';
+    font-family: 'Old London';
     font-size: 12px;
     transition: visibility 0s linear 0.25s, opacity 0.25s ease;
     bottom: calc(100% + 15px);
@@ -3382,7 +3382,7 @@ input:checked + .toggleSwitchSlider:before {
 
 /* Overlay title styles. */
 #overlayTitle {
-    font-family: 'Avenir Medium';
+    font-family: 'Old London';
     font-size: 20px;
     font-weight: bold;
     letter-spacing: 1px;
@@ -3408,7 +3408,7 @@ input:checked + .toggleSwitchSlider:before {
     background: none;
     border: 1px solid #ffffff;
     color: white;
-    font-family: 'Avenir Medium';
+    font-family: 'Old London';
     font-weight: bold;
     border-radius: 2px;
     padding: 0px 8.1px;
@@ -3460,7 +3460,7 @@ input:checked + .toggleSwitchSlider:before {
 /* Server selection header. */
 #serverSelectHeader,
 #accountSelectHeader {
-    font-family: 'Avenir Medium';
+    font-family: 'Old London';
     font-size: 20px;
     font-weight: bold;
     color: #fff;
@@ -3682,7 +3682,7 @@ input:checked + .toggleSwitchSlider:before {
     background: none;
     border: 1px solid #ffffff;
     color: white;
-    font-family: 'Avenir Medium';
+    font-family: 'Old London';
     font-weight: bold;
     border-radius: 2px;
     padding: 0px 8.1px;
