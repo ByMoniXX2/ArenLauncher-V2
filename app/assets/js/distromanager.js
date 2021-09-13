@@ -537,8 +537,8 @@ exports.pullRemote = function(){
         return exports.pullLocal()
     }
     return new Promise((resolve, reject) => {
-        const distroURL = 'http://arenserver.com/distribution.json'
-        //const distroURL = 'http://arenserver.com/distribution.json'
+        const distroURL = 'http://arenserver.somee.com/distribution.json'
+        //const distroURL = 'http://arenserver.somee.com/distribution.json'
         const opts = {
             url: distroURL,
             timeout: 10000
