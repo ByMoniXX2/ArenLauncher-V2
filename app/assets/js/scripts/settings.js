@@ -1220,7 +1220,7 @@ function populateAboutVersionInformation(){
  */
 function populateReleaseNotes(){
     $.ajax({
-        url: 'https://github.com/ByMoniXX2/ArenLauncher-V2/releases.atom',
+        url: 'https://github.com/ByMoniXX2/ArenLauncher-V2/releases',
         success: (data) => {
             const version = 'v' + remote.app.getVersion()
             const entries = $(data).find('entry')
