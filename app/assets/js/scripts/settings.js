@@ -1305,7 +1305,7 @@ function populateSettingsUpdateInformation(data){
         settingsUpdateTitle.innerHTML = 'Estas en la version mas reciente'
         settingsUpdateChangelogCont.style.display = 'none'
         populateVersionInformation(remote.app.getVersion(), settingsUpdateVersionValue, settingsUpdateVersionTitle, settingsUpdateVersionCheck)
-        settingsUpdateButtonStatus('Revisar si hay actualizaciones', false, () => {
+        settingsUpdateButtonStatus('Revisar si hay actualizaciones', true, () => {
             if(!isDev){
                 ipcRenderer.send('autoUpdateAction', 'checkForUpdate')
                 settingsUpdateButtonStatus('Revisando si hay actualizaciones...', true)
