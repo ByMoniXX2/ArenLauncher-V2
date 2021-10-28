@@ -232,7 +232,7 @@ const refreshServerStatus = async function(fade = false){
         const serverURL = new URL('my://' + serv.getAddress())
         const servStat = await ServerStatus.getStatus(serverURL.hostname, serverURL.port)
         if(servStat.online){
-            pLabel = 'JUGADORES'
+            pLabel = ''
             pVal = servStat.onlinePlayers + '/' + servStat.maxPlayers
         }
 
@@ -659,7 +659,7 @@ function dlAsync(login = true){
                 const onLoadComplete = () => {
                     toggleLaunchArea(false)
                     if(hasRPC){
-                        DiscordWrapper.updateDetails('Loading game..')
+                        DiscordWrapper.updateDetails('Cargando Aren..')
                     }
                     proc.stdout.on('data', gameStateChange)
                     proc.stdout.removeListener('data', tempListener)
@@ -686,9 +686,9 @@ function dlAsync(login = true){
                 const gameStateChange = function(data){
                     data = data.trim()
                     if(SERVER_JOINED_REGEX.test(data)){
-                        DiscordWrapper.updateDetails('En el Pueblo...')
+                        DiscordWrapper.updateDetails('Explorando nuevos horizontes....')
                     } else if(GAME_JOINED_REGEX.test(data)){
-                        DiscordWrapper.updateDetails('En el Pueblo')
+                        DiscordWrapper.updateDetails('En el Pueblo....')
                     }
                 }
 
@@ -708,7 +708,7 @@ function dlAsync(login = true){
                     proc.stdout.on('data', tempListener)
                     proc.stderr.on('data', gameErrorListener)
 
-                    setLaunchDetails('Listo. Disfruta de Aren Server!')
+                    setLaunchDetails('Listo. Disfruta de Aren!')
 
                     // Init Discord Hook
                     const distro = DistroManager.getDistribution()
