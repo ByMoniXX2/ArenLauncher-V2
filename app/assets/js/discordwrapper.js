@@ -6,12 +6,12 @@ const {Client} = require('discord-rpc')
 let client
 let activity
 
-exports.initRPC = function(genSettings, servSettings, initialDetails = 'Tramitando en la aduana...'){
+exports.initRPC = function(genSettings, servSettings, initialDetails = 'Iniciando Aren...'){
     client = new Client({ transport: 'ipc' })
 
     activity = {
         details: initialDetails,
-        state: 'Servidor: ' + servSettings.shortId,
+        state: 'Server: ' + servSettings.shortId,
         largeImageKey: servSettings.largeImageKey,
         largeImageText: servSettings.largeImageText,
         smallImageKey: genSettings.smallImageKey,
