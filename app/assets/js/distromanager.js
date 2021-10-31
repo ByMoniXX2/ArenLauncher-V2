@@ -541,7 +541,7 @@ exports.pullRemote = function(){
         //const distroURL = 'http://arenserver.somee.com/distribution.json'
         const opts = {
             url: distroURL,
-            timeout: 10000
+            timeout: 5000
         }
         const distroDest = path.join(ConfigManager.getLauncherDirectory(), 'distribution.json')
         request(opts, (error, resp, body) => {
