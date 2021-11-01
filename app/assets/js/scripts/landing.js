@@ -568,7 +568,7 @@ function dlAsync(login = true){
         } else if(m.context === 'progress'){
             switch(m.data){
                 case 'assets': {
-                    const perc = (m.value/m.total)*60
+                    const perc = (m.value/m.total)*20
                     setLaunchPercentage(40+perc, 100, parseInt(40+perc))
                     break
                 }
