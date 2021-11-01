@@ -106,7 +106,7 @@ function showMainUI(data){
 
 function showFatalStartupError(){
     setTimeout(() => {
-        $('#loadingContainer').fadeOut(250, () => {
+        $('#loadingContainer').fadeOut(1000, () => {
             document.getElementById('overlayContainer').style.background = 'none'
             setOverlayContent(
                 'Error fatal: Fallo al intentar cargar el distribution index.',
