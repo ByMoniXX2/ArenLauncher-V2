@@ -317,7 +317,7 @@ body, button {
     cursor: pointer;
     position: relative;
     right: -20px;
-    transition: 0.5s ease;
+    transition: 0.25s ease;
     margin-top: 5%;
     margin-bottom: -5%;
 }
@@ -618,7 +618,7 @@ body, button {
     cursor: pointer;
     position: relative;
     right: -20px;
-    transition: 0.5s ease;
+    transition: 0.25s ease;
 }
 #loginButton:disabled {
     color: rgba(255, 255, 255, 0.75);
@@ -2281,7 +2281,7 @@ input:checked + .toggleSwitchSlider:before {
 /* Upper content container. */
 #landingContainer > #upper {
     position: relative;
-    transition: top 2s ease;
+    transition: top 0.25s ease;
     top: 0px;
     height: 77%;
     display: flex;
@@ -2311,7 +2311,7 @@ input:checked + .toggleSwitchSlider:before {
 }
 #landingContainer > #lower > #left {
     position: relative;
-    transition: top 2s ease;
+    transition: top 0.25 ease;
     top: 0px;
     height: 100%;
     width: 33%;
@@ -2327,7 +2327,7 @@ input:checked + .toggleSwitchSlider:before {
 }
 #landingContainer > #lower > #center {
     position: relative;
-    transition: top 2s ease;
+    transition: top 0.25s ease;
     top: 0px;
     height: 100%;
     width: 34%;
@@ -2337,12 +2337,12 @@ input:checked + .toggleSwitchSlider:before {
 #landingContainer > #lower > #center #content {
     position: relative;
     z-index: 500;
-    transition: top 2s ease;
+    transition: top 0.25s ease;
     top: 10px;
 }
 #landingContainer > #lower > #right {
     position: relative;
-    transition: top 2s ease;
+    transition: top 0.25s ease;
     top: 0px;
     height: 100%;
     width: 33%;
@@ -2361,7 +2361,7 @@ input:checked + .toggleSwitchSlider:before {
     top: 100%;
     height: 100%;
     width: 100%;
-    transition: top 2s ease;
+    transition: top 0.25s ease;
     display: flex;
     align-items: flex-end;
     justify-content: center;
