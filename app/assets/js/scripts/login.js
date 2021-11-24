@@ -220,6 +220,22 @@ loginCancelButton.onclick = (e) => {
             loginViewCancelHandler()
             loginViewCancelHandler = null
         }
+        if(loginViewOnSuccess === VIEWS.settings){
+            if(hasRPC){
+                DiscordWrapper.updateDetails('En la configuracion...')
+                DiscordWrapper.clearState()
+            }
+        } else {
+            if(hasRPC){
+                if(ConfigManager.getSelectedServer()){
+                    const serv = DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer())
+                    DiscordWrapper.updateDetails('Listo para jugar!')
+                    DiscordWrapper.updateState('Server: ' + serv.getName())
+                } else {
+                    DiscordWrapper.updateDetails('En el menu...')
+                }
+            }
+        }
     })
 }
 
