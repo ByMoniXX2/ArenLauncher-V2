@@ -80,24 +80,33 @@ function showMainUI(data){
 
         if(ConfigManager.isFirstLaunch()){
             currentView = VIEWS.welcome
-            $(VIEWS.welcome).fadeIn(1000)
+            $(VIEWS.welcome).fadeIn(100)
+            if(hasRPC){
+                DiscordWrapper.updateDetails('En pantalla de bienvenida')
+                DiscordWrapper.updateState('Setup del Launcher')
+            }
         } else {
             if(isLoggedIn){
                 currentView = VIEWS.landing
-                $(VIEWS.landing).fadeIn(1000)
+                $(VIEWS.landing).fadeIn(100)
+                if(hasRPC && !ConfigManager.isFirstLaunch()){
+                    if(ConfigManager.getSelectedServer()){
+                        const serv = DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer())
+                        DiscordWrapper.updateDetails('Listo para jugar!')
+                    } else {
+                        DiscordWrapper.updateDetails('En el menu...')
+                    }
+                }
             } else {
                 currentView = VIEWS.login
-                $(VIEWS.login).fadeIn(1000)
+                $(VIEWS.login).fadeIn(100)
+                if(hasRPC){
+                    DiscordWrapper.updateDetails('Agregando una cuenta...')
+                    DiscordWrapper.clearState()
+                }
             }
         }
-
-        setTimeout(() => {
-            $('#loadingContainer').fadeOut(500, () => {
-                $('#loadSpinnerImage').removeClass('rotating')
-            })
-        }, 250)
-        
-    }, 750)
+    }, 250)
     // Disable tabbing to the news container.
     initNews().then(() => {
         $('#newsContainer *').attr('tabindex', '-1')
