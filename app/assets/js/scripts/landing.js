@@ -1,14 +1,19 @@
 /**
  * Script for landing.ejs
  */
+
 // Requirements
 const cp                      = require('child_process')
 const crypto                  = require('crypto')
 const {URL}                   = require('url')
+const {Remarkable}            = require('remarkable')
+const fs                      = require('fs-extra')
+const chokidar                = require('chokidar')
 
 // Internal Requirements
 const DiscordWrapper          = require('./assets/js/discordwrapper')
 const Mojang                  = require('./assets/js/mojang')
+const ModRealmsRest           = require('./assets/js/modrealms')
 const ProcessBuilder          = require('./assets/js/processbuilder')
 const ServerStatus            = require('./assets/js/serverstatus')
 
@@ -22,6 +27,9 @@ const server_selection_button = document.getElementById('server_selection_button
 const user_text               = document.getElementById('user_text')
 
 const loggerLanding = LoggerUtil('%c[Landing]', 'color: #000668; font-weight: bold')
+const loggerAEx = LoggerUtil('%c[AEx]', 'color: #353232; font-weight: bold')
+const loggerLaunchSuite = LoggerUtil('%c[LaunchSuite]', 'color: #000668; font-weight: bold')
+const loggerMetrics = LoggerUtil('%c[ModRealms Metrics]', 'color: #7289da; font-weight: bold')
 
 /* Launch Progress Wrapper Functions */
 
@@ -72,6 +80,7 @@ function setLaunchPercentage(value, max, percent = ((value/max)*100)){
 function setDownloadPercentage(value, max, percent = ((value/max)*100)){
     remote.getCurrentWindow().setProgressBar(value/max)
     setLaunchPercentage(value, max, percent)
+    DiscordWrapper.updateDetails('Descargando... (' + percent + '%)')
 }
 
 /**
@@ -83,28 +92,44 @@ function setLaunchEnabled(val){
     document.getElementById('launch_button').disabled = !val
 }
 
+/**
+ * Enable or disable the launch button.
+ *
+ * @param {string} the text to set the launch button to.
+ */
+function setLaunchButtonText(text){
+    document.getElementById('launch_button').innerHTML = text
+}
+
 // Bind launch button
 document.getElementById('launch_button').addEventListener('click', function(e){
-    loggerLanding.log('Abriendo juego..')
-    const mcVersion = DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer()).getMinecraftVersion()
-    const jExe = ConfigManager.getJavaExecutable()
-    if(jExe == null){
-        asyncSystemScan(mcVersion)
-    } else {
+    if(checkCurrentServer(true)){
+        if(ConfigManager.getConsoleOnLaunch()){
+            let window = remote.getCurrentWindow()
+            window.toggleDevTools()
+        }
 
-        setLaunchDetails(Lang.queryJS('landing.launch.pleaseWait'))
-        toggleLaunchArea(true)
-        setLaunchPercentage(0, 100)
+        loggerLanding.log('Launching game..')
+        const mcVersion = DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer()).getMinecraftVersion()
+        const jExe = ConfigManager.getJavaExecutable()
+        if(jExe == null){
+            asyncSystemScan(mcVersion)
+        } else {
 
-        const jg = new JavaGuard(mcVersion)
-        jg._validateJavaBinary(jExe).then((v) => {
-            loggerLanding.log('Java version meta', v)
-            if(v.valid){
-                dlAsync()
-            } else {
-                asyncSystemScan(mcVersion)
-            }
-        })
+            setLaunchDetails(Lang.queryJS('landing.launch.pleaseWait'))
+            toggleLaunchArea(true)
+            setLaunchPercentage(0, 100)
+
+            const jg = new JavaGuard(mcVersion)
+            jg._validateJavaBinary(jExe).then((v) => {
+                loggerLanding.log('Java version meta', v)
+                if(v.valid){
+                    dlAsync()
+                } else {
+                    asyncSystemScan(mcVersion)
+                }
+            })
+        }
     }
 })
 
@@ -112,43 +137,102 @@ document.getElementById('launch_button').addEventListener('click', function(e){
 document.getElementById('settingsMediaButton').onclick = (e) => {
     prepareSettings()
     switchView(getCurrentView(), VIEWS.settings)
+    if(hasRPC){
+        DiscordWrapper.updateDetails('En la configuracion...')
+        DiscordWrapper.clearState()
+    }
+}
+
+document.getElementById('openInstanceMediaButton').onclick = (e) => {
+    let INSTANCE_PATH = path.join(ConfigManager.getDataDirectory(), 'instances', ConfigManager.getSelectedServer())
+    let INSTANCES_PATH = path.join(ConfigManager.getDataDirectory(), 'instances')
+    if(ConfigManager.getSelectedServer() && fs.pathExistsSync(INSTANCE_PATH)){
+        shell.openPath(INSTANCE_PATH)
+    } else if (fs.pathExistsSync(INSTANCES_PATH)){
+        shell.openPath(INSTANCES_PATH)
+    } else {
+        shell.openPath(ConfigManager.getDataDirectory())
+    }
+}
+
+document.getElementById('refreshMediaButton').onclick = (e) => {
+    let ele = document.getElementById('refreshMediaButton')
+    ele.setAttribute('inprogress', '')
+    DistroManager.pullRemote().then((data) => {
+        onDistroRefresh(data)
+        showMainUI(data)
+        refreshModRealmsStatuses()
+        setOverlayContent(
+            'Launcher reiniciado ✅',
+            'Esto es una confirmacion de que tu launcher se reinicio.',
+            'Aceptar',
+        )
+    }).catch(err => {
+        setOverlayContent(
+            'Error actualizando la distribucion. 🧐',
+            'El launcher no fue capaz de conseguir los archivos actualizados de Oblivion, y por ende esta intentando usar archivos *posiblemente* desactualizados.<br><br>Reiniciar el launcher suele arreglar este problema. <br><br>Codigo del error:<br>' + err,
+            'Entendido.',
+        )
+    }).finally(() => {
+        setOverlayHandler(() => {
+            toggleOverlay(false)
+        })
+        setDismissHandler(() => {
+            shell.openExternal('https://discord.gg/farfadox')
+        })
+        toggleOverlay(true, true)
+        ele.removeAttribute('inprogress')
+    })
 }
 
 // Bind avatar overlay button.
 document.getElementById('avatarOverlay').onclick = (e) => {
     prepareSettings()
-    switchView(getCurrentView(), VIEWS.settings, 500, 500, () => {
+    switchView(getCurrentView(), VIEWS.settings, 250, 250, () => {
         settingsNavItemListener(document.getElementById('settingsNavAccount'), false)
     })
 }
 
 // Bind selected account
 function updateSelectedAccount(authUser){
-    let username = 'Sin cuenta seleccionada'
+    let username = 'No Account Selected'
     if(authUser != null){
         if(authUser.displayName != null){
             username = authUser.displayName
         }
         if(authUser.uuid != null){
-            document.getElementById('avatarContainer').style.backgroundImage = `url('https://crafatar.com/renders/body/${authUser.uuid}')`
+            document.getElementById('avatarContainer').style.backgroundImage = `url('https://mc-heads.net/body/${authUser.uuid}/right')`
         }
     }
     user_text.innerHTML = username
 }
 updateSelectedAccount(ConfigManager.getSelectedAccount())
 
+function randomiseBackground() {
+    let backgroundDir = fs.readdirSync(path.join(__dirname, 'assets', 'images', 'backgrounds'))
+    const backgrounds = Array.from(backgroundDir.values())
+    const bkid = backgrounds[Math.floor((Math.random() * backgroundDir.length))]
+    document.body.style.backgroundImage = `url('assets/images/backgrounds/${bkid}')`
+}
+
 // Bind selected server
 function updateSelectedServer(serv){
+    server_selection_button.innerHTML = (serv != null ? serv.getName() : 'No Server Selected')
     if(getCurrentView() === VIEWS.settings){
         saveAllModConfigurations()
     }
     ConfigManager.setSelectedServer(serv != null ? serv.getID() : null)
     ConfigManager.save()
-    server_selection_button.innerHTML = '\u2022 ' + (serv != null ? serv.getName() : 'Sin servidor elegido')
     if(getCurrentView() === VIEWS.settings){
         animateModsTabRefresh()
     }
     setLaunchEnabled(serv != null)
+    if(serv){
+        setLaunchButtonText(fs.pathExistsSync(path.join(ConfigManager.getDataDirectory(), 'instances', serv.getID())) ? 'JUGAR' : 'INSTALAR Y JUGAR')
+    } else {
+        setLaunchButtonText('JUGAR')
+    }
+
 }
 // Real text is set in uibinder.js on distributionIndexDone.
 server_selection_button.innerHTML = '\u2022 Cargando..'
@@ -159,7 +243,7 @@ server_selection_button.onclick = (e) => {
 
 // Update Mojang Status Color
 const refreshMojangStatuses = async function(){
-    loggerLanding.log('Recargando estados de Mojang..')
+    loggerLanding.log('Refrescando estado de Mojang..')
 
     let status = 'grey'
     let tooltipEssentialHTML = ''
@@ -172,11 +256,6 @@ const refreshMojangStatuses = async function(){
 
         for(let i=0; i<statuses.length; i++){
             const service = statuses[i]
-
-            // Mojang API is broken for these two. https://bugs.mojang.com/browse/WEB-2303
-            if(service.service === 'sessionserver.mojang.com' || service.service === 'minecraft.net') {
-                service.status = 'green'
-            }
 
             if(service.essential){
                 tooltipEssentialHTML += `<div class="mojangStatusContainer">
@@ -212,7 +291,7 @@ const refreshMojangStatuses = async function(){
         }
 
     } catch (err) {
-        loggerLanding.warn('Incapaz de recargar el estado de Mojang.')
+        loggerLanding.warn('No se pudo refrescar el estado de Mojang.')
         loggerLanding.debug(err)
     }
     
@@ -221,30 +300,71 @@ const refreshMojangStatuses = async function(){
     document.getElementById('mojang_status_icon').style.color = Mojang.statusToHex(status)
 }
 
+const refreshModRealmsStatuses = async function(){
+    loggerLanding.log('Refrescando estado del servidor..')
+    let status = 'grey'
+    let tooltipServerHTML = ''
+    let greenCount = 0
+
+    // let modpacks = await ModRealmsRest.modpacks()
+    // let statuses = await ModRealmsRest.status()
+
+    ModRealmsRest.modpacks().then(modpacks => {
+        ModRealmsRest.status().then(statuses => {
+            if(modpacks.length !== 0){
+                for(let i=0; i<statuses.length; i++){
+                    const server = statuses[i]
+                    const players = server.isOffline() ? 'Restarting' : `${server.players}/${server.maxPlayers}`
+                    tooltipServerHTML += `<div class="modrealmsStatusContainer">
+                    <span class="modrealmsStatusIcon" style="color: ${Mojang.statusToHex(server.status)};">&#8226;</span>
+                    <span class="modrealmsStatusName">${server.name}</span>
+                    <span class="modrealmsStatusPlayers">${players}</span>
+                </div>`
+
+                    if(server.status.toLowerCase() === 'green') ++greenCount
+                }
+
+                if(greenCount === 0){
+                    status = 'red'
+                } else {
+                    status = 'green'
+                }
+            } else {
+                tooltipServerHTML = `<div class="modrealmsStatusContainer">
+                    <span class="modrealmsStatusName" style="text-align: center;">Parece que Farfadox no tiene servidores hmmm...</span>
+                </div>`
+            }
+
+            document.getElementById('modrealmsStatusServerContainer').innerHTML = tooltipServerHTML
+            document.getElementById('modrealms_status_icon').style.color = Mojang.statusToHex(status)
+        })
+    })
+}
+
 const refreshServerStatus = async function(fade = false){
-    loggerLanding.log('Refrescando el estado del servidor...')
+    loggerLanding.log('Refreshing Server Status')
     const serv = DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer())
 
-    let pLabel = ''
-    let pVal = ''
+    let pLabel = 'SERVER'
+    let pVal = 'OFFLINE'
 
     try {
         const serverURL = new URL('my://' + serv.getAddress())
         const servStat = await ServerStatus.getStatus(serverURL.hostname, serverURL.port)
         if(servStat.online){
-            pLabel = ''
+            pLabel = 'PLAYERS'
             pVal = servStat.onlinePlayers + '/' + servStat.maxPlayers
         }
 
     } catch (err) {
-        loggerLanding.warn('Incapaz de refrescar el estado del servidor.')
+        loggerLanding.warn('No se pudo refrescar el estado del servidor, asumiendo que esta offline.')
         loggerLanding.debug(err)
     }
     if(fade){
-        $('#server_status_wrapper').fadeOut(250, () => {
+        $('#server_status_wrapper').fadeOut(150, () => {
             document.getElementById('landingPlayerLabel').innerHTML = pLabel
             document.getElementById('player_count').innerHTML = pVal
-            $('#server_status_wrapper').fadeIn(500)
+            $('#server_status_wrapper').fadeIn(250)
         })
     } else {
         document.getElementById('landingPlayerLabel').innerHTML = pLabel
@@ -253,12 +373,25 @@ const refreshServerStatus = async function(fade = false){
     
 }
 
+function loadDiscord(){
+    if(!ConfigManager.getDiscordIntegration()) return
+    const distro = DistroManager.getDistribution()
+    if(!hasRPC){
+        if(distro.discord != null){
+            DiscordWrapper.initRPC(distro.discord, null, '...')
+            hasRPC = true
+        }
+    }
+}
+
 refreshMojangStatuses()
+refreshModRealmsStatuses()
 // Server Status is refreshed in uibinder.js on distributionIndexDone.
 
 // Set refresh rate to once every 5 minutes.
-let mojangStatusListener = setInterval(() => refreshMojangStatuses(true), 600000)
-let serverStatusListener = setInterval(() => refreshServerStatus(true), 600000)
+let mojangStatusListener = setInterval(() => refreshMojangStatuses(true), 30000)
+let networkStatusListener = setInterval(() => refreshModRealmsStatuses(true), 30000)
+let serverStatusListener = setInterval(() => refreshServerStatus(true), 3000000)
 
 /**
  * Shows an error overlay, toggles off the launch area.
@@ -292,7 +425,7 @@ let extractListener
  */
 function asyncSystemScan(mcVersion, launchAfter = true){
 
-    setLaunchDetails('Por favor, espera..')
+    setLaunchDetails('Please wait..')
     toggleLaunchArea(true)
     setLaunchPercentage(0, 100)
 
@@ -328,22 +461,22 @@ function asyncSystemScan(mcVersion, launchAfter = true){
                 // Show this information to the user.
                 setOverlayContent(
                     'No se encontro<br>una instalacion de Java compatible',
-                    'Para entrar a Aren, necesitas una instalacion de 64 bits de java 8. Queres que te instalemos una copia? Al instalar, aceptas <a href="http://www.oracle.com/technetwork/java/javase/terms/license/index.html">los terminos y condiciones de Oracle.</a>.',
+                    'Para entrar a Farfania, necesitas una instalacion de 64 bits de java 8. Queres que te instalemos una copia? Al instalar, aceptas <a href="http://www.oracle.com/technetwork/java/javase/terms/license/index.html">los terminos y condiciones de Oracle.</a>.',
                     'Instalar java',
                     'Instalar manualmente'
                 )
                 setOverlayHandler(() => {
-                    setLaunchDetails('Preparando descarga de java..')
+                    setLaunchDetails('Preparando descarga de Java..')
                     sysAEx.send({task: 'changeContext', class: 'AssetGuard', args: [ConfigManager.getCommonDirectory(),ConfigManager.getJavaExecutable()]})
                     sysAEx.send({task: 'execute', function: '_enqueueOpenJDK', argsArr: [ConfigManager.getDataDirectory()]})
                     toggleOverlay(false)
                 })
                 setDismissHandler(() => {
-                    $('#overlayContent').fadeOut(250, () => {
+                    $('#overlayContent').fadeOut(150, () => {
                         //$('#overlayDismiss').toggle(false)
                         setOverlayContent(
                             'Java es requerido<br>para abrir el juego',
-                            'Una instalacion valida de java es requerida.',
+                            'Una instalacion valida de java es requerida. Recomiendo contactarte con Chesvin1 para mas instrucciones.',
                             'Lo entiendo',
                             'Volver atras'
                         )
@@ -355,7 +488,7 @@ function asyncSystemScan(mcVersion, launchAfter = true){
                             toggleOverlay(false, true)
                             asyncSystemScan()
                         })
-                        $('#overlayContent').fadeIn(250)
+                        $('#overlayContent').fadeIn(150)
                     })
                 })
                 toggleOverlay(true, true)
@@ -380,7 +513,7 @@ function asyncSystemScan(mcVersion, launchAfter = true){
             if(m.result === true){
 
                 // Oracle JRE enqueued successfully, begin download.
-                setLaunchDetails('Descargando java..')
+                setLaunchDetails('Descargando Java..')
                 sysAEx.send({task: 'execute', function: 'processDlQueues', argsArr: [[{id:'java', limit:1}]]})
 
             } else {
@@ -388,8 +521,8 @@ function asyncSystemScan(mcVersion, launchAfter = true){
                 // Oracle JRE enqueue failed. Probably due to a change in their website format.
                 // User will have to follow the guide to install Java.
                 setOverlayContent(
-                    'Error inesperado:<br>Descarga de java fallida',
-                    'Hubo un error desconocido, instala java manualmente!',
+                    'Error inesperado:<br>Descarga de Java fallida',
+                    'Hubo un error desconocido, instala Java manualmente!',
                     'Lo entiendo'
                 )
                 setOverlayHandler(() => {
@@ -418,7 +551,7 @@ function asyncSystemScan(mcVersion, launchAfter = true){
                     remote.getCurrentWindow().setProgressBar(2)
 
                     // Wait for extration to complete.
-                    const eLStr = 'Extracting'
+                    const eLStr = 'Extrayendo'
                     let dotStr = ''
                     setLaunchDetails(eLStr)
                     extractListener = setInterval(() => {
@@ -460,7 +593,7 @@ function asyncSystemScan(mcVersion, launchAfter = true){
     })
 
     // Begin system Java scan.
-    setLaunchDetails('Revisando info del sistema..')
+    setLaunchDetails('Chequeando informacion del sistema..')
     sysAEx.send({task: 'execute', function: 'validateJava', argsArr: [ConfigManager.getDataDirectory()]})
 
 }
@@ -469,7 +602,6 @@ function asyncSystemScan(mcVersion, launchAfter = true){
 let proc
 // Is DiscordRPC enabled
 let hasRPC = false
-// Joined server regex
 // Change this if your server uses something different.
 const GAME_JOINED_REGEX = /\[.+\]: Sound engine started/
 const GAME_LAUNCH_REGEX = /^\[.+\]: (?:MinecraftForge .+ Initialized|ModLauncher .+ starting: .+)$/
@@ -489,7 +621,7 @@ function dlAsync(login = true){
 
     if(login) {
         if(ConfigManager.getSelectedAccount() == null){
-            loggerLanding.error('Debes ingresar a una cuenta.')
+            loggerLanding.error('Tienes que estar logueado a una cuenta...')
             return
         }
     }
@@ -497,9 +629,6 @@ function dlAsync(login = true){
     setLaunchDetails('Por favor, espera..')
     toggleLaunchArea(true)
     setLaunchPercentage(0, 100)
-
-    const loggerAEx = LoggerUtil('%c[AEx]', 'color: #353232; font-weight: bold')
-    const loggerLaunchSuite = LoggerUtil('%c[LaunchSuite]', 'color: #000668; font-weight: bold')
 
     const forkEnv = JSON.parse(JSON.stringify(process.env))
     forkEnv.CONFIG_DIRECT_PATH = ConfigManager.getLauncherDirectory()
@@ -525,12 +654,12 @@ function dlAsync(login = true){
     })
     aEx.on('error', (err) => {
         loggerLaunchSuite.error('Error durante el lanzamiento', err)
-        showLaunchFailure('Error durante el lanzamiento', err.message || 'Revisa la consola (CTRL + i) para mas detalles y reportalo a ByMoniXX!.')
+        showLaunchFailure('Error durante el lanzamiento', err.message || 'See console (CTRL + Shift + i) for more details.')
     })
     aEx.on('close', (code, signal) => {
         if(code !== 0){
             loggerLaunchSuite.error(`AssetExec exited with code ${code}, assuming error.`)
-            showLaunchFailure('Error durante el lanzamiento', 'Revisa la consola (CTRL + i) para mas detalles y reportalo a ByMoniXX!')
+            showLaunchFailure('Error During Launch', 'See console (CTRL + Shift + i) for more details.')
         }
     })
 
@@ -541,28 +670,28 @@ function dlAsync(login = true){
             switch(m.data){
                 case 'distribution':
                     setLaunchPercentage(20, 100)
-                    loggerLaunchSuite.log('Validated distibution index.')
+                    loggerLaunchSuite.log('Distribution Index evaluado.')
                     setLaunchDetails('Cargando informacion de version..')
                     break
                 case 'version':
                     setLaunchPercentage(40, 100)
-                    loggerLaunchSuite.log('Informacion de version cargada.')
-                    setLaunchDetails('Validando integridad de archivos..')
+                    loggerLaunchSuite.log('Data de la version cargado')
+                    setLaunchDetails('Validando integridad de los archivos..')
                     break
                 case 'assets':
                     setLaunchPercentage(60, 100)
-                    loggerLaunchSuite.log('Validacion de archivos completada')
-                    setLaunchDetails('Validando la integridad de las librerias..')
+                    loggerLaunchSuite.log('Integridad de los archivos validada!')
+                    setLaunchDetails('Validando integridad de librerias..')
                     break
                 case 'libraries':
                     setLaunchPercentage(80, 100)
-                    loggerLaunchSuite.log('Validacion de librerias completada.')
+                    loggerLaunchSuite.log('Integridad de librerias validada!')
                     setLaunchDetails('Validando archivos miscelaneos..')
                     break
                 case 'files':
                     setLaunchPercentage(100, 100)
-                    loggerLaunchSuite.log('Validacion de archivos completada.')
-                    setLaunchDetails('Descargando archivos..')
+                    loggerLaunchSuite.log('Validacion de archivos completa paaaaaaa B).')
+                    setLaunchDetails('Descargando archivos...')
                     break
             }
         } else if(m.context === 'progress'){
@@ -580,7 +709,7 @@ function dlAsync(login = true){
                     remote.getCurrentWindow().setProgressBar(2)
 
                     // Download done, extracting.
-                    const eLStr = 'Extrayendo librerias...'
+                    const eLStr = 'Extracting libraries'
                     let dotStr = ''
                     setLaunchDetails(eLStr)
                     progressListener = setInterval(() => {
@@ -604,23 +733,22 @@ function dlAsync(login = true){
                         progressListener = null
                     }
 
-                    setLaunchDetails('Preparando para lanzar..')
+                    setLaunchDetails('Preparando para iniciar..')
                     break
             }
         } else if(m.context === 'error'){
             switch(m.data){
                 case 'download':
                     loggerLaunchSuite.error('Error durante la descarga:', m.error)
-                    
                     if(m.error.code === 'ENOENT'){
                         showLaunchFailure(
-                            'Error de descarga',
-                            'No se pudo conectar al servidor de archivos, asegurate que estas conectado a Internet.'
+                            'Error de descarga!',
+                            'No se pudo conectar a los servidores de Oblivion. Asegurate que estas usando una conexion de internet estable. Si no se soluciona, utiliza las alternativas en el discord o contactate con el staff 🧐'
                         )
                     } else {
                         showLaunchFailure(
-                            'Error de descarga',
-                            'Revisa la consola (CTRL + i) para mas detalles. Intentalo de nuevo.'
+                            'Error de descarga!',
+                            'Chequea la consola (CTRL + i) para mas detalles. Contactate en Discord con el staff si el problema persiste!.'
                         )
                     }
 
@@ -638,8 +766,8 @@ function dlAsync(login = true){
             if(m.result.forgeData == null || m.result.versionData == null){
                 loggerLaunchSuite.error('Error durante la validacion:', m.result)
 
-                loggerLaunchSuite.error('Error durante la validacion', m.result.error)
-                showLaunchFailure('Error durante el lanzamiento', 'Revisa la consola para mas detalles (CTRL + i)')
+                loggerLaunchSuite.error('Error durante el lanzamiento', m.result.error)
+                showLaunchFailure('Error Durante Lanzamiento', 'Por favor, chequea la consola para mas detalles (CTRL + i).')
 
                 allGood = false
             }
@@ -648,22 +776,24 @@ function dlAsync(login = true){
             versionData = m.result.versionData
 
             if(login && allGood) {
+                updateSelectedServer(DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer()))
                 const authUser = ConfigManager.getSelectedAccount()
-                loggerLaunchSuite.log(`Sending selected account (${authUser.displayName}) to ProcessBuilder.`)
+                loggerLaunchSuite.log(`Enviando cuenta procesada (${authUser.displayName}) al ProcessBuilder.`)
                 let pb = new ProcessBuilder(serv, versionData, forgeData, authUser, remote.app.getVersion())
-                setLaunchDetails('Lanzando juego..')
-
-                // const SERVER_JOINED_REGEX = /\[.+\]: \[CHAT\] [a-zA-Z0-9_]{1,16} joined the game/
-                const SERVER_JOINED_REGEX = new RegExp(`\\[.+\\]: \\[CHAT\\] ${authUser.displayName} joined the game`)
+                setLaunchDetails('Lanzando Juego..')
+                const SERVER_JOINED_REGEX = new RegExp(`\\[.+\\]: \\[CHAT\\] ${authUser.displayName} entro a Oblivion!`)
+                const SERVER_LEAVE_REGEX = new RegExp(`\\[.+\\]: \\[CHAT\\] ${authUser.displayName} salio de Oblivion!`)
 
                 const onLoadComplete = () => {
                     toggleLaunchArea(false)
                     if(hasRPC){
-                        DiscordWrapper.updateDetails('Cargando Juego..')
+                        DiscordWrapper.updateDetails('Explorando tierras olvidadas...')
+                        DiscordWrapper.resetTime()
                     }
+                    gameCrashReportListener()
                     proc.stdout.on('data', gameStateChange)
                     proc.stdout.removeListener('data', tempListener)
-                    proc.stderr.removeListener('data', gameErrorListener)
+                    proc.stdout.removeListener('data', gameLaunchErrorListener)
                 }
                 const start = Date.now()
 
@@ -672,7 +802,8 @@ function dlAsync(login = true){
                 // the client application has started, and we can hide
                 // the progress bar stuff.
                 const tempListener = function(data){
-                    if(GAME_LAUNCH_REGEX.test(data.trim())){
+                    data = data.trim()
+                    if(GAME_LAUNCH_REGEX.test(data)){
                         const diff = Date.now()-start
                         if(diff < MIN_LINGER) {
                             setTimeout(onLoadComplete, MIN_LINGER-diff)
@@ -686,17 +817,60 @@ function dlAsync(login = true){
                 const gameStateChange = function(data){
                     data = data.trim()
                     if(SERVER_JOINED_REGEX.test(data)){
-                        DiscordWrapper.updateDetails('Explorando nuevos horizontes...')
-                    } else if(GAME_JOINED_REGEX.test(data)){
-                        DiscordWrapper.updateDetails('Completando mazmorras...')
+                        DiscordWrapper.updateDetails('Explorando tierras desconocidas...')
+                        DiscordWrapper.resetTime()
                     }
                 }
 
-                const gameErrorListener = function(data){
+                // Listener for Discord RPC.
+                const gameCrashReportListener = function(){
+                    const watcher = chokidar.watch(path.join(ConfigManager.getInstanceDirectory(), serv.getID(), 'crash-reports'), {
+                        persistent: true,
+                        ignoreInitial: true
+                    })
+
+                    watcher.on('add', path => {
+                        shell.showItemInFolder(path)
+                        setOverlayContent(
+                            'El juego crasheo... 🤨',
+                            'Huh... Parece que tu juego acaba de crashear. Tu carpeta de crash reports ahora esta abierta. Por favor, contactate con el staff en Discord y enviales el crash report! 🧐 <br><br>Tu crash report esta ubicado en: <br> + path',
+                            'Aceptar 😪',
+                            'Abrir crash report'
+                        )
+                        setOverlayHandler(() => {
+                            toggleOverlay(false)
+                        })
+                        setDismissHandler(() => {
+                            shell.openPath(path)
+                        })
+                        toggleOverlay(true, true)
+                    })
+                }
+
+                const gameLaunchErrorListener = function(data){
                     data = data.trim()
-                    if(data.indexOf('No se pudo cargar o encontrar el main class net.minecraft.launchwrapper.Launch') > -1){
-                        loggerLaunchSuite.error('Descarga del juego fallida, LaunchWrapper no fue descargado exitosamente.')
+                    if(data.indexOf('Could not find or load main class net.minecraft.launchwrapper.Launch') > -1){
+                        loggerLaunchSuite.error('El lanzamiento del juego fallo, LaunchWrapper no fue descargado correctamente.')
                         showLaunchFailure('Error durante el lanzamiento', 'El archivo principal, LaunchWrapper, fallo al descargar. Como resultado, el juego no puede abrirse.<br><br>Para arreglar esto, apaga temporalmente tu antivirus e intentalo otra vez.')
+                        proc.kill(9)
+                    }  else if(data.includes('net.minecraftforge.fml.relauncher.FMLSecurityManager$ExitTrappedException')){
+                        loggerLaunchSuite.error('La carga del juego fallo antes de que si quiera el JVM pueda abrir una ventana!')
+                        let LOG_FILE = path.join(ConfigManager.getInstanceDirectory(), serv.getID(), 'logs', 'latest.log')
+                        setOverlayContent(
+                            'Error durante el lanzamiento... 🤨',
+                            'Parece que tu Minecraft crasheo antes de que si quiera pueda abrir el juego o que algun crash report pueda ser generado!. Una causa comun de esto es debido a que no lanzaste el launcher como administrador. Por favor intenta abrir el launcher nuevamente como administrador.<br><br>Si instalaste algun mod custom al juego, intenta deshabilitarlo y proba otra vez 😎.<br><br>Si seguis teniendo este problema despues de hacer eso, subi tu latest.log a <a href="https://ptero.co">pastebin</a> y enviaselo a algun staff en <a href="https://discord.gg/farfadox">Discord</a>!',
+                            'Aceptar',
+                            'Abrir latest.log'
+                        )
+                        setOverlayHandler(() => {
+                            toggleOverlay(false)
+                        })
+                        setDismissHandler(() => {
+                            shell.openPath(LOG_FILE)
+                        })
+                        toggleOverlay(true, true)
+                        toggleLaunchArea(false)
+                        proc.kill(9)
                     }
                 }
 
@@ -706,65 +880,86 @@ function dlAsync(login = true){
 
                     // Bind listeners to stdout.
                     proc.stdout.on('data', tempListener)
-                    proc.stderr.on('data', gameErrorListener)
+                    proc.stdout.on('data', gameLaunchErrorListener)
 
-                    setLaunchDetails('Listo. Disfruta de Aren!')
-
-                    // Init Discord Hook
-                    const distro = DistroManager.getDistribution()
-                    if(distro.discord != null && serv.discord != null){
-                        DiscordWrapper.initRPC(distro.discord, serv.discord)
-                        hasRPC = true
-                        proc.on('close', (code, signal) => {
-                            loggerLaunchSuite.log('Shutting down Discord Rich Presence..')
-                            DiscordWrapper.shutdownRPC()
-                            hasRPC = false
-                            proc = null
-                        })
-                    }
-
+                    setLaunchDetails('Listo 😎<br>Suerte en Oblivion!')
+                    proc.on('close', (code, signal) => {
+                        if(hasRPC){
+                            const serv = DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer())
+                            DiscordWrapper.updateDetails('Listo para Jugar!')
+                            DiscordWrapper.resetTime()
+                        }
+                    })
                 } catch(err) {
-
-                    loggerLaunchSuite.error('Error durante el lanzamiento', err)
-                    showLaunchFailure('Error durante el lanzamiento', 'Revisa la consola para mas detalles (CTRL + i)')
-
+                    loggerLaunchSuite.error('Error durante lanzamiento', err)
+                    showLaunchFailure('Error durante el lanzamiento 😥', 'Chequea la consola (CTRL + i) para mas detalles.')
                 }
             }
 
             // Disconnect from AssetExec
             aEx.disconnect()
-
         }
     })
 
     // Begin Validations
 
     // Validate Forge files.
-    setLaunchDetails('Cargando informacion del servidor..')
+    validateServerInformation()
+}
 
-    refreshDistributionIndex(true, (data) => {
+function validateServerInformation() {
+    setLaunchDetails('Cargando informacion del servidor..')
+    DiscordWrapper.updateDetails('Cargando informacion del servidor...')
+
+    DistroManager.pullRemoteIfOutdated().then(data => {
         onDistroRefresh(data)
         serv = data.getServer(ConfigManager.getSelectedServer())
         aEx.send({task: 'execute', function: 'validateEverything', argsArr: [ConfigManager.getSelectedServer(), DistroManager.isDevMode()]})
-    }, (err) => {
-        loggerLaunchSuite.log('Error tratando de conseguir una copia del distribution index.', err)
-        refreshDistributionIndex(false, (data) => {
-            onDistroRefresh(data)
+    }).catch(err => {
+        loggerLaunchSuite.error('No se pudo refrescar el Distribution Index.', err)
+        if(DistroManager.getDistribution() == null){
+            showLaunchFailure('Error fatal 😡', 'No se pudo cargar una copia del distribution index... Por favor, chequea la consola (CTRL + i) para mas detalles, y contactate con un staff')
+
+            // Disconnect from AssetExec
+            aEx.disconnect()
+        } else {
             serv = data.getServer(ConfigManager.getSelectedServer())
             aEx.send({task: 'execute', function: 'validateEverything', argsArr: [ConfigManager.getSelectedServer(), DistroManager.isDevMode()]})
-        }, (err) => {
-            loggerLaunchSuite.error('Fallo al intentar recargar el distribution index.', err)
-            if(DistroManager.getDistribution() == null){
-                showLaunchFailure('Error fatal', 'Fallo al intentar recargar el distribution index!!!!. Contactate con ByMoniXX urgentemente.')
-
-                // Disconnect from AssetExec
-                aEx.disconnect()
-            } else {
-                serv = data.getServer(ConfigManager.getSelectedServer())
-                aEx.send({task: 'execute', function: 'validateEverything', argsArr: [ConfigManager.getSelectedServer(), DistroManager.isDevMode()]})
-            }
-        })
+        }
     })
+}
+
+/**
+ * Checks the current server to ensure that they still have permission to play it (checking server code, if applicable) and open up an error overlay if specified
+ * @Param {boolean} whether or not to show the error overlay
+ */
+function checkCurrentServer(errorOverlay = true){
+    const selectedServId = ConfigManager.getSelectedServer()
+    if(selectedServId){
+        const selectedServ = DistroManager.getDistribution().getServer(selectedServId)
+        if(selectedServ){
+            if(selectedServ.getServerCode() && selectedServ.getServerCode() !== ''){
+                if(!ConfigManager.getServerCodes().includes(selectedServ.getServerCode())){
+                    if(errorOverlay){
+                        setOverlayContent(
+                            'Codigo del servidor restringido! 🐒',
+                            'Parece que ya no tenes acceso al servidor!',
+                            'Cambiar servidor'
+                        )
+                        setOverlayHandler(() => {
+                            toggleServerSelection(true)
+                        })
+                        setDismissHandler(() => {
+                            toggleOverlay(false)
+                        })
+                        toggleOverlay(true, true)
+                    }
+                    return false
+                }
+            }
+        }
+        return true
+    }
 }
 
 /**
@@ -776,7 +971,7 @@ const newsContent                   = document.getElementById('newsContent')
 const newsArticleTitle              = document.getElementById('newsArticleTitle')
 const newsArticleDate               = document.getElementById('newsArticleDate')
 const newsArticleAuthor             = document.getElementById('newsArticleAuthor')
-const newsArticleComments           = document.getElementById('newsArticleComments')
+// const newsArticleComments           = document.getElementById('newsArticleComments')
 const newsNavigationStatus          = document.getElementById('newsNavigationStatus')
 const newsArticleContentScrollable  = document.getElementById('newsArticleContentScrollable')
 const nELoadSpan                    = document.getElementById('nELoadSpan')
@@ -837,17 +1032,35 @@ function slide_(up){
 // Bind news button.
 document.getElementById('newsButton').onclick = () => {
     // Toggle tabbing.
+    if(document.getElementById('newsButton').hasAttribute('selected')){
+        document.getElementById('newsButton').removeAttribute('selected')
+    } else {
+        document.getElementById('newsButton').setAttribute('selected', '')
+    }
     if(newsActive){
         $('#landingContainer *').removeAttr('tabindex')
         $('#newsContainer *').attr('tabindex', '-1')
+        if(hasRPC){
+            if(ConfigManager.getSelectedServer()){
+                const serv = DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer())
+                DiscordWrapper.updateDetails('Listo para jugar!')
+            } else {
+                DiscordWrapper.updateDetails('En el menu...')
+            }
+        }
     } else {
         $('#landingContainer *').attr('tabindex', '-1')
         $('#newsContainer, #newsContainer *, #lower, #lower #center *').removeAttr('tabindex')
         if(newsAlertShown){
-            $('#newsButtonAlert').fadeOut(2000)
+            document.getElementById('newsButtonText').removeAttribute('alertShown')
+            $('#newsButtonAlert').fadeOut(1000)
             newsAlertShown = false
             ConfigManager.setNewsCacheDismissed(true)
             ConfigManager.save()
+        }
+        if(hasRPC){
+            DiscordWrapper.updateDetails('Reading the News...')
+            DiscordWrapper.clearState()
         }
     }
     slide_(!newsActive)
@@ -867,7 +1080,7 @@ let newsLoadingListener = null
  */
 function setNewsLoading(val){
     if(val){
-        const nLStr = ''
+        const nLStr = 'Checking for News'
         let dotStr = '..'
         nELoadSpan.innerHTML = nLStr + dotStr
         newsLoadingListener = setInterval(() => {
@@ -877,7 +1090,7 @@ function setNewsLoading(val){
                 dotStr += '.'
             }
             nELoadSpan.innerHTML = nLStr + dotStr
-        }, 750)
+        }, 5)
     } else {
         if(newsLoadingListener != null){
             clearInterval(newsLoadingListener)
@@ -888,9 +1101,9 @@ function setNewsLoading(val){
 
 // Bind retry button.
 newsErrorRetry.onclick = () => {
-    $('#newsErrorFailed').fadeOut(250, () => {
+    $('#newsErrorFailed').fadeOut(150, () => {
         initNews()
-        $('#newsErrorLoading').fadeIn(250)
+        $('#newsErrorLoading').fadeIn(150)
     })
 }
 
@@ -910,8 +1123,8 @@ newsArticleContentScrollable.onscroll = (e) => {
  */
 function reloadNews(){
     return new Promise((resolve, reject) => {
-        $('#newsContent').fadeOut(250, () => {
-            $('#newsErrorLoading').fadeIn(250)
+        $('#newsContent').fadeOut(150, () => {
+            $('#newsErrorLoading').fadeIn(150)
             initNews().then(() => {
                 resolve()
             })
@@ -926,7 +1139,8 @@ let newsAlertShown = false
  */
 function showNewsAlert(){
     newsAlertShown = true
-    $(newsButtonAlert).fadeIn(250)
+    document.getElementById('newsButtonText').setAttribute('alertShown', '')
+    //$(newsButtonAlert).fadeIn(150)
 }
 
 /**
@@ -950,8 +1164,8 @@ function initNews(){
                 // News Loading Failed
                 setNewsLoading(false)
 
-                $('#newsErrorLoading').fadeOut(250, () => {
-                    $('#newsErrorFailed').fadeIn(250, () => {
+                $('#newsErrorLoading').fadeOut(150, () => {
+                    $('#newsErrorFailed').fadeIn(150, () => {
                         resolve()
                     })
                 })
@@ -966,8 +1180,8 @@ function initNews(){
                 })
                 ConfigManager.save()
 
-                $('#newsErrorLoading').fadeOut(250, () => {
-                    $('#newsErrorNone').fadeIn(250, () => {
+                $('#newsErrorLoading').fadeOut(150, () => {
+                    $('#newsErrorNone').fadeIn(150, () => {
                         resolve()
                     })
                 })
@@ -1025,9 +1239,9 @@ function initNews(){
                 document.getElementById('newsNavigateRight').onclick = () => { switchHandler(true) }
                 document.getElementById('newsNavigateLeft').onclick = () => { switchHandler(false) }
 
-                $('#newsErrorContainer').fadeOut(250, () => {
+                $('#newsErrorContainer').fadeOut(150, () => {
                     displayArticle(newsArr[0], 1)
-                    $('#newsContent').fadeIn(250, () => {
+                    $('#newsContent').fadeIn(150, () => {
                         resolve()
                     })
                 })
@@ -1073,9 +1287,12 @@ function displayArticle(articleObject, index){
     newsArticleTitle.href = articleObject.link
     newsArticleAuthor.innerHTML = 'by ' + articleObject.author
     newsArticleDate.innerHTML = articleObject.date
-    newsArticleComments.innerHTML = articleObject.comments
-    newsArticleComments.href = articleObject.commentsLink
-    newsArticleContentScrollable.innerHTML = '<div id="newsArticleContentWrapper"><div class="newsArticleSpacerTop"></div>' + articleObject.content + '<div class="newsArticleSpacerBot"></div></div>'
+    // newsArticleComments.innerHTML = articleObject.comments
+    // newsArticleComments.href = articleObject.commentsLink
+
+    let content = articleObject.content
+
+    newsArticleContentScrollable.innerHTML = '<div id="newsArticleContentWrapper"><div class="newsArticleSpacerTop"></div>' + content + '<div class="newsArticleSpacerBot"></div></div>'
     Array.from(newsArticleContentScrollable.getElementsByClassName('bbCodeSpoilerButton')).forEach(v => {
         v.onclick = () => {
             const text = v.parentElement.getElementsByClassName('bbCodeSpoilerText')[0]
@@ -1109,8 +1326,8 @@ function loadNews(){
                     const date = new Date(el.find('pubDate').text()).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric'})
 
                     // Resolve comments.
-                    let comments = el.find('slash\\:comments').text() || '0'
-                    comments = comments + ' Comment' + (comments === '1' ? '' : 's')
+                    // let comments = el.find('slash\\:comments').text() || '0'
+                    // comments = comments + ' Comment' + (comments === '1' ? '' : 's')
 
                     // Fix relative links in content.
                     let content = el.find('content\\:encoded').text()
@@ -1132,8 +1349,8 @@ function loadNews(){
                             date,
                             author,
                             content,
-                            comments,
-                            commentsLink: link + '#comments'
+                            // comments,
+                            // commentsLink: link + '#comments'
                         }
                     )
                 }
@@ -1142,7 +1359,8 @@ function loadNews(){
                 })
             },
             timeout: 2500
-        }).catch(err => {
+        }
+        ).catch(err => {
             resolve({
                 articles: null
             })
