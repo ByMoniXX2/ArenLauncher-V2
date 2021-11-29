@@ -385,17 +385,12 @@ function asyncSystemScan(mcVersion, launchAfter = true){
 
             } else {
 
-                document.getElementById('refreshMediaButton').onclick = (e) => {
-                    let ele = document.getElementById('refreshMediaButton')
-                    ele.setAttribute('inprogress', '')
-                    DistroManager.pullRemote().then((data) => {
-                        onDistroRefresh(data)
-                        showMainUI(data)
-                        refreshModRealmsStatuses()
-                        setOverlayContent(
-                            'Launcher reiniciado ✅',
-                            'Esto es una confirmacion de que tu launcher se reinicio.',
-                            'Aceptar',
+                // Oracle JRE enqueue failed. Probably due to a change in their website format.
+                // User will have to follow the guide to install Java.
+                setOverlayContent(
+                    'Error inesperado:<br>Descarga de java fallida',
+                    'Hubo un error desconocido, instala java manualmente!',
+                    'Lo entiendo'
                 )
                 setOverlayHandler(() => {
                     toggleOverlay(false)
