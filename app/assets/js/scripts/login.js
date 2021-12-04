@@ -232,7 +232,7 @@ loginCancelButton.onclick = (e) => {
                     DiscordWrapper.updateDetails('Listo para jugar!')
                     DiscordWrapper.updateState('Server: ' + serv.getName())
                 } else {
-                    DiscordWrapper.updateDetails('Listo para lanzar el juego...')
+                    DiscordWrapper.updateDetails('En el menu...')
                 }
             }
         }
@@ -269,22 +269,9 @@ loginButton.addEventListener('click', () => {
             switchView(VIEWS.login, loginViewOnSuccess, 500, 500, () => {
                 // Temporary workaround
                 if(loginViewOnSuccess === VIEWS.settings){
-                    if(hasRPC){
-                        DiscordWrapper.updateDetails('En la configuración...')
-                        DiscordWrapper.clearState()
-                    }
-                } else {
-                    if(hasRPC){
-                        if(ConfigManager.getSelectedServer()){
-                            const serv = DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer())
-                            DiscordWrapper.updateDetails('Listo para jugar!')
-                            DiscordWrapper.updateState('Server: ' + serv.getName())
-                        } else {
-                            DiscordWrapper.updateDetails('Listo para lanzar el juego...')
-                        }
-                    }
                     prepareSettings()
-                }s = VIEWS.landing // Reset this for good measure.
+                }
+                loginViewOnSuccess = VIEWS.landing // Reset this for good measure.
                 loginCancelEnabled(false) // Reset this for good measure.
                 loginViewCancelHandler = null // Reset this for good measure.
                 loginUsername.value = ''

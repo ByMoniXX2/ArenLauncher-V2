@@ -120,7 +120,6 @@ function toggleOverlay(toggleState, dismissable = false, content = 'overlayConte
 function toggleServerSelection(toggleState){
     prepareServerSelectionList()
     toggleOverlay(toggleState, true, 'serverSelectContent')
-    DiscordWrapper.updateDetails('Seleccionando un servidor...')
 }
 
 /**
@@ -144,12 +143,10 @@ function setOverlayContent(title, description, acknowledge, dismiss = 'Dismiss')
  * 
  * @param {function} handler 
  */
- function setOverlayHandler(handler){
+function setOverlayHandler(handler){
     if(handler == null){
         document.getElementById('overlayAcknowledge').onclick = () => {
             toggleOverlay(false)
-            DiscordWrapper.updateDetails('Listo para jugar!')
-            DiscordWrapper.updateState('Server: ' + serv.getName())
         }
     } else {
         document.getElementById('overlayAcknowledge').onclick = handler
