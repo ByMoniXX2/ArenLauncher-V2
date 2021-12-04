@@ -232,7 +232,7 @@ loginCancelButton.onclick = (e) => {
                     DiscordWrapper.updateDetails('Listo para jugar!')
                     DiscordWrapper.updateState('Server: ' + serv.getName())
                 } else {
-                    DiscordWrapper.updateDetails('En el menu...')
+                    DiscordWrapper.updateDetails('Listo para lanzar el juego...')
                 }
             }
         }
