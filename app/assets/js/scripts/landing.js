@@ -255,7 +255,21 @@ const refreshServerStatus = async function(fade = false){
         document.getElementById('landingPlayerLabel').innerHTML = pLabel
         document.getElementById('player_count').innerHTML = pVal
     }
-    
+
+}
+
+function loadDiscord() {
+    if (!ConfigManager.getDiscordIntegration()) return
+    const distro = DistroManager.getDistribution()
+    const serv = distro.getServer(ConfigManager.getSelectedServer())
+
+    loggerLanding.log('Now loading DiscordRPC')
+    if (!hasRPC) {
+        if (distro.discord != null) {
+            DiscordWrapper.initRPC(distro.discord, serv.discord, '...')
+            hasRPC = true
+        }
+    }
 }
 
 refreshMojangStatuses()
