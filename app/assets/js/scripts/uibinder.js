@@ -65,6 +65,7 @@ function showMainUI(data){
     prepareSettings(true)
     updateSelectedServer(data.getServer(ConfigManager.getSelectedServer()))
     refreshServerStatus()
+    loadDiscord()
     setTimeout(() => {
         document.getElementById('frameBar').style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
         document.body.style.backgroundImage = `url('assets/images/backgrounds/${document.body.getAttribute('bkid')}.jpg')`
@@ -81,13 +82,30 @@ function showMainUI(data){
         if(ConfigManager.isFirstLaunch()){
             currentView = VIEWS.welcome
             $(VIEWS.welcome).fadeIn(1000)
+            if(hasRPC){
+                DiscordWrapper.updateDetails('Bienvenido y continua.')
+                DiscordWrapper.updateState('Configuración del lanzador')
+            }
         } else {
             if(isLoggedIn){
                 currentView = VIEWS.landing
                 $(VIEWS.landing).fadeIn(1000)
+                if(hasRPC && !ConfigManager.isFirstLaunch()){
+                    if(ConfigManager.getSelectedServer()){
+                        const serv = DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer())
+                        DiscordWrapper.updateDetails('Listo para jugar!')
+                        DiscordWrapper.updateState('Server: ' + serv.getName())
+                    } else {
+                        DiscordWrapper.updateDetails('Listo para lanzar el juego...')
+                    }
+                }
             } else {
                 currentView = VIEWS.login
                 $(VIEWS.login).fadeIn(1000)
+                if(hasRPC){
+                    DiscordWrapper.updateDetails('Agregando una cuenta...')
+                    DiscordWrapper.clearState()
+                }
             }
         }
 
@@ -106,12 +124,12 @@ function showMainUI(data){
 
 function showFatalStartupError(){
     setTimeout(() => {
-        $('#loadingContainer').fadeOut(1000, () => {
+        $('#loadingContainer').fadeOut(250, () => {
             document.getElementById('overlayContainer').style.background = 'none'
             setOverlayContent(
-                'Error fatal: Fallo al intentar cargar el distribution index.',
-                'Hubo un fallo de conexion con el servidor de distribucion de Aren Server. No se pudo descargar ningun archivo!. <br><br>El Distribution index, provee al launcher la informacion acerca de los mods del server. Si queres una solucion rapida, en los mensajes fijados de Discord en el canal de #consultas hay una serie de pasos para arreglarlo rapidamente!',
-                'Cerrar'
+                'Erreur fatale: Impossible de télécharger les mises à jour',
+                'Nous n\'avons pas pu nous connecter à notre serveur afin de télécharger les mises à jour. Aucune copie locale n\'a été trouvée.',
+                'Fermer'
             )
             setOverlayHandler(() => {
                 const window = remote.getCurrentWindow()
@@ -323,10 +341,10 @@ async function validateSelectedAccount(){
             ConfigManager.save()
             const accLen = Object.keys(ConfigManager.getAuthAccounts()).length
             setOverlayContent(
-                'Fallo al refrescar el login',
-                `No se pudo refrescar tu login! (Probablemente por estar crackeado!) <strong>${selectedAcc.displayName}</strong>. Por favor ${accLen > 0 ? 'selecciona otra cuenta ' : ''} o logueate otra vez.`,
+                'Failed to Refresh Login',
+                `We were unable to refresh the login for <strong>${selectedAcc.displayName}</strong>. Please ${accLen > 0 ? 'select another account or ' : ''} login again.`,
                 'Login',
-                'Elegir otra cuenta'
+                'Select Another Account'
             )
             setOverlayHandler(() => {
                 document.getElementById('loginUsername').value = selectedAcc.username
@@ -343,6 +361,10 @@ async function validateSelectedAccount(){
                 }
                 toggleOverlay(false)
                 switchView(getCurrentView(), VIEWS.login)
+                if(hasRPC){
+                    DiscordWrapper.updateDetails('Agregando una cuenta...')
+                    DiscordWrapper.clearState()
+                }
             })
             setDismissHandler(() => {
                 if(accLen > 1){
