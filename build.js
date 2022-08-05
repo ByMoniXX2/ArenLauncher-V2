@@ -21,7 +21,7 @@ builder.build({
         appId: 'Aren Launcher',
         productName: 'Aren Launcher',
         artifactName: '${productName}-instalador-${version}.${ext}',
-        copyright: '2021 ByMoniXX',
+        copyright: '2022 ByMoniXX',
         directories: {
             buildResources: 'build',
             output: 'dist'
