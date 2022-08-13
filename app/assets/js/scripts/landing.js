@@ -253,6 +253,20 @@ const refreshServerStatus = async function(fade = false){
     
 }
 
+function loadDiscord() {
+    if (!ConfigManager.getDiscordIntegration()) return
+    const distro = DistroManager.getDistribution()
+    const serv = distro.getServer(ConfigManager.getSelectedServer())
+
+    loggerLanding.log('Now loading DiscordRPC')
+    if (!hasRPC) {
+        if (distro.discord != null) {
+            DiscordWrapper.initRPC(distro.discord, serv.discord, '...')
+            hasRPC = true
+        }
+    }
+}
+
 refreshMojangStatuses()
 // Server Status is refreshed in uibinder.js on distributionIndexDone.
 
