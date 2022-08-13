@@ -307,7 +307,17 @@ settingsNavDone.onclick = () => {
     ConfigManager.save()
     saveDropinModConfiguration()
     saveShaderpackSettings()
+    saveResourcePackSettings()
     switchView(getCurrentView(), VIEWS.landing)
+    if(hasRPC){
+        if(ConfigManager.getSelectedServer()){
+            const serv = DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer())
+            DiscordWrapper.updateDetails('Prêt à jouer!')
+            DiscordWrapper.updateState('Serveur: ' + serv.getName())
+        } else {
+            DiscordWrapper.updateDetails('Prêt à démarrer le jeu...')
+        }
+    }
 }
 
 /**
@@ -320,6 +330,10 @@ document.getElementById('settingsAddAccount').onclick = (e) => {
         loginViewOnCancel = VIEWS.settings
         loginViewOnSuccess = VIEWS.settings
         loginCancelEnabled(true)
+        if(hasRPC){
+            DiscordWrapper.updateDetails('Entrain d\'ajouter un compte...')
+            DiscordWrapper.clearState()
+        }
     })
 }
 
@@ -368,6 +382,10 @@ function bindAuthAccountLogOut(){
                     processLogOut(val, isLastAccount)
                     toggleOverlay(false)
                     switchView(getCurrentView(), VIEWS.login)
+                    if(hasRPC){
+                        DiscordWrapper.updateDetails('Entrain d\'ajouter un compte...')
+                        DiscordWrapper.clearState()
+                    }
                 })
                 setDismissHandler(() => {
                     toggleOverlay(false)

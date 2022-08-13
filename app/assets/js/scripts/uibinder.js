@@ -81,13 +81,30 @@ function showMainUI(data){
         if(ConfigManager.isFirstLaunch()){
             currentView = VIEWS.welcome
             $(VIEWS.welcome).fadeIn(1000)
+            if(hasRPC){
+                DiscordWrapper.updateDetails('Bienvenue et continuer.')
+                DiscordWrapper.updateState('Configuration du launcher')
+            }
         } else {
             if(isLoggedIn){
                 currentView = VIEWS.landing
                 $(VIEWS.landing).fadeIn(1000)
+                if(hasRPC && !ConfigManager.isFirstLaunch()){
+                    if(ConfigManager.getSelectedServer()){
+                        const serv = DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer())
+                        DiscordWrapper.updateDetails('Prêt à jouer!')
+                        DiscordWrapper.updateState('Serveur: ' + serv.getName())
+                    } else {
+                        DiscordWrapper.updateDetails('Prêt à lancer le jeu...')
+                    }
+                }
             } else {
                 currentView = VIEWS.login
                 $(VIEWS.login).fadeIn(1000)
+                if(hasRPC){
+                    DiscordWrapper.updateDetails('Entrain d\'ajouter un compte...')
+                    DiscordWrapper.clearState()
+                }
             }
         }
 
@@ -343,6 +360,10 @@ async function validateSelectedAccount(){
                 }
                 toggleOverlay(false)
                 switchView(getCurrentView(), VIEWS.login)
+                if(hasRPC){
+                    DiscordWrapper.updateDetails('Entrain d\'ajouter un compte...')
+                    DiscordWrapper.clearState()
+                }
             })
             setDismissHandler(() => {
                 if(accLen > 1){
