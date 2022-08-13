@@ -11,8 +11,11 @@ exports.initRPC = function(genSettings, servSettings, initialDetails = 'En atten
 
     activity = {
         details: initialDetails,
-        largeImageKey: genSettings.smallImageKey,
-        largeImageText: genSettings.smallImageText,
+        state: 'Servidor: ' + servSettings.shortId,
+        largeImageKey: servSettings.largeImageKey,
+        largeImageText: servSettings.largeImageText,
+        smallImageKey: genSettings.smallImageKey,
+        smallImageText: genSettings.smallImageText,
         startTimestamp: new Date().getTime(),
         instance: false
     }

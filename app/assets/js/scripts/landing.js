@@ -69,6 +69,19 @@ function setLaunchPercentage(value, max, percent = ((value/max)*100)){
  * @param {number} max The total download size.
  * @param {number|string} percent Optional. The percentage to display on the progress label.
  */
+function setDownloadPercentage(value, max, percent = ((value / max) * 100)) {
+    remote.getCurrentWindow().setProgressBar(value / max)
+    setLaunchPercentage(value, max, percent)
+    DiscordWrapper.updateDetails('Téléchargement en cours... (' + percent + '%)')
+}
+
+/**
+ * Set the value of the OS progress bar and display that on the UI.
+ * 
+ * @param {number} value The progress value.
+ * @param {number} max The total download size.
+ * @param {number|string} percent Optional. The percentage to display on the progress label.
+ */
 function setDownloadPercentage(value, max, percent = ((value/max)*100)){
     remote.getCurrentWindow().setProgressBar(value/max)
     setLaunchPercentage(value, max, percent)
@@ -85,7 +98,7 @@ function setLaunchEnabled(val){
 
 // Bind launch button
 document.getElementById('launch_button').addEventListener('click', function(e){
-    loggerLanding.log('𝕬𝖇𝖗𝖎𝖊𝖓𝖉𝖔 𝖏𝖚𝖊𝖌𝖔..')
+    loggerLanding.log('Abriendo juego..')
     const mcVersion = DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer()).getMinecraftVersion()
     const jExe = ConfigManager.getJavaExecutable()
     if(jExe == null){
@@ -112,6 +125,10 @@ document.getElementById('launch_button').addEventListener('click', function(e){
 document.getElementById('settingsMediaButton').onclick = (e) => {
     prepareSettings()
     switchView(getCurrentView(), VIEWS.settings)
+    if (hasRPC) {
+        DiscordWrapper.updateDetails('Dans les réglages...')
+        DiscordWrapper.clearState()
+    }
 }
 
 // Bind avatar overlay button.
@@ -124,7 +141,7 @@ document.getElementById('avatarOverlay').onclick = (e) => {
 
 // Bind selected account
 function updateSelectedAccount(authUser){
-    let username = '𝕾𝖎𝖓 𝖈𝖚𝖊𝖓𝖙𝖆 𝖘𝖊𝖑𝖊𝖈𝖈𝖎𝖔𝖓𝖆𝖉𝖆'
+    let username = 'Sin cuenta seleccionada'
     if(authUser != null){
         if(authUser.displayName != null){
             username = authUser.displayName
@@ -151,7 +168,7 @@ function updateSelectedServer(serv){
     setLaunchEnabled(serv != null)
 }
 // Real text is set in uibinder.js on distributionIndexDone.
-server_selection_button.innerHTML = '\u2022 𝕮𝖆𝖗𝖌𝖆𝖓𝖉𝖔..'
+server_selection_button.innerHTML = '\u2022 Cargando..'
 server_selection_button.onclick = (e) => {
     e.target.blur()
     toggleServerSelection(true)
@@ -159,7 +176,7 @@ server_selection_button.onclick = (e) => {
 
 // Update Mojang Status Color
 const refreshMojangStatuses = async function(){
-    loggerLanding.log('𝕽𝖊𝖈𝖆𝖗𝖌𝖆𝖓𝖉𝖔 𝖊𝖘𝖙𝖆𝖉𝖔𝖘 𝖉𝖊 𝕸𝖔𝖏𝖆𝖓𝖌..')
+    loggerLanding.log('Recargando estados de Mojang..')
 
     let status = 'grey'
     let tooltipEssentialHTML = ''
@@ -222,17 +239,17 @@ const refreshMojangStatuses = async function(){
 }
 
 const refreshServerStatus = async function(fade = false){
-    loggerLanding.log('𝕽𝖊𝖋𝖗𝖊𝖘𝖈𝖆𝖓𝖉𝖔 𝖊𝖑 𝖊𝖘𝖙𝖆𝖉𝖔 𝖉𝖊𝖑 𝖘𝖊𝖗𝖛𝖎𝖉𝖔𝖗...')
+    loggerLanding.log('Refrescando el estado del servidor...')
     const serv = DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer())
 
-    let pLabel = 'SERVER'
-    let pVal = 'OFFLINE'
+    let pLabel = ''
+    let pVal = ''
 
     try {
         const serverURL = new URL('my://' + serv.getAddress())
         const servStat = await ServerStatus.getStatus(serverURL.hostname, serverURL.port)
         if(servStat.online){
-            pLabel = 'JUGADORES'
+            pLabel = ''
             pVal = servStat.onlinePlayers + '/' + servStat.maxPlayers
         }
 
@@ -251,6 +268,20 @@ const refreshServerStatus = async function(fade = false){
         document.getElementById('player_count').innerHTML = pVal
     }
     
+}
+
+function loadDiscord() {
+    if (!ConfigManager.getDiscordIntegration()) return
+    const distro = DistroManager.getDistribution()
+    const serv = distro.getServer(ConfigManager.getSelectedServer())
+
+    loggerLanding.log('Now loading DiscordRPC')
+    if (!hasRPC) {
+        if (distro.discord != null) {
+            DiscordWrapper.initRPC(distro.discord, serv.discord, '...')
+            hasRPC = true
+        }
+    }
 }
 
 refreshMojangStatuses()
@@ -327,13 +358,13 @@ function asyncSystemScan(mcVersion, launchAfter = true){
                 // If the result is null, no valid Java installation was found.
                 // Show this information to the user.
                 setOverlayContent(
-                    '𝕹𝖔 𝖘𝖊 𝖊𝖓𝖈𝖔𝖓𝖙𝖗𝖔<br>𝖚𝖓𝖆 𝖎𝖓𝖘𝖙𝖆𝖑𝖆𝖈𝖎𝖔𝖓 𝖉𝖊 𝕵𝖆𝖛𝖆 𝖈𝖔𝖒𝖕𝖆𝖙𝖎𝖇𝖑𝖊',
-                    '𝕻𝖆𝖗𝖆 𝖊𝖓𝖙𝖗𝖆𝖗 𝖆 𝕬𝖗𝖊𝖓, 𝖓𝖊𝖈𝖊𝖘𝖎𝖙𝖆𝖘 𝖚𝖓𝖆 𝖎𝖓𝖘𝖙𝖆𝖑𝖆𝖈𝖎𝖔𝖓 𝖉𝖊 64 𝖇𝖎𝖙𝖘 𝖉𝖊 𝖏𝖆𝖛𝖆 8. 𝕼𝖚𝖊𝖗𝖊𝖘 𝖖𝖚𝖊 𝖙𝖊 𝖎𝖓𝖘𝖙𝖆𝖑𝖊𝖒𝖔𝖘 𝖚𝖓𝖆 𝖈𝖔𝖕𝖎𝖆? 𝕬𝖑 𝖎𝖓𝖘𝖙𝖆𝖑𝖆𝖗, 𝖆𝖈𝖊𝖕𝖙𝖆𝖘 <a href="http://www.oracle.com/technetwork/java/javase/terms/license/index.html">𝖑𝖔𝖘 𝖙𝖊𝖗𝖒𝖎𝖓𝖔𝖘 𝖞 𝖈𝖔𝖓𝖉𝖎𝖈𝖎𝖔𝖓𝖊𝖘 𝖉𝖊 𝕺𝖗𝖆𝖈𝖑𝖊.</a>.',
-                    '𝕴𝖓𝖘𝖙𝖆𝖑𝖆𝖗 𝖏𝖆𝖛𝖆',
-                    '𝕴𝖓𝖘𝖙𝖆𝖑𝖆𝖗 𝖒𝖆𝖓𝖚𝖆𝖑𝖒𝖊𝖓𝖙𝖊'
+                    'No se encontro<br>una instalacion de Java compatible',
+                    'Para entrar a Aren, necesitas una instalacion de 64 bits de java 8. Queres que te instalemos una copia? Al instalar, aceptas <a href="http://www.oracle.com/technetwork/java/javase/terms/license/index.html">los terminos y condiciones de Oracle.</a>.',
+                    'Instalar java',
+                    'Instalar manualmente'
                 )
                 setOverlayHandler(() => {
-                    setLaunchDetails('𝕻𝖗𝖊𝖕𝖆𝖗𝖆𝖓𝖉𝖔 𝖉𝖊𝖘𝖈𝖆𝖗𝖌𝖆 𝖉𝖊 𝖏𝖆𝖛𝖆..')
+                    setLaunchDetails('Preparando descarga de java..')
                     sysAEx.send({task: 'changeContext', class: 'AssetGuard', args: [ConfigManager.getCommonDirectory(),ConfigManager.getJavaExecutable()]})
                     sysAEx.send({task: 'execute', function: '_enqueueOpenJDK', argsArr: [ConfigManager.getDataDirectory()]})
                     toggleOverlay(false)
@@ -342,10 +373,10 @@ function asyncSystemScan(mcVersion, launchAfter = true){
                     $('#overlayContent').fadeOut(250, () => {
                         //$('#overlayDismiss').toggle(false)
                         setOverlayContent(
-                            '𝕵𝖆𝖛𝖆 𝖊𝖘 𝖗𝖊𝖖𝖚𝖊𝖗𝖎𝖉𝖔<br>𝖕𝖆𝖗𝖆 𝖆𝖇𝖗𝖎𝖗 𝖊𝖑 𝖏𝖚𝖊𝖌𝖔',
-                            '𝖀𝖓𝖆 𝖎𝖓𝖘𝖙𝖆𝖑𝖆𝖈𝖎𝖔𝖓 𝖛𝖆𝖑𝖎𝖉𝖆 𝖉𝖊 𝖏𝖆𝖛𝖆 𝖊𝖘 𝖗𝖊𝖖𝖚𝖊𝖗𝖎𝖉𝖆.',
-                            '𝕷𝖔 𝖊𝖓𝖙𝖎𝖊𝖓𝖉𝖔',
-                            '𝖁𝖔𝖑𝖛𝖊𝖗 𝖆𝖙𝖗𝖆𝖘'
+                            'Java es requerido<br>para abrir el juego',
+                            'Una instalacion valida de java es requerida.',
+                            'Lo entiendo',
+                            'Volver atras'
                         )
                         setOverlayHandler(() => {
                             toggleLaunchArea(false)
@@ -380,7 +411,7 @@ function asyncSystemScan(mcVersion, launchAfter = true){
             if(m.result === true){
 
                 // Oracle JRE enqueued successfully, begin download.
-                setLaunchDetails('𝕯𝖊𝖘𝖈𝖆𝖗𝖌𝖆𝖓𝖉𝖔 𝖏𝖆𝖛𝖆..')
+                setLaunchDetails('Descargando java..')
                 sysAEx.send({task: 'execute', function: 'processDlQueues', argsArr: [[{id:'java', limit:1}]]})
 
             } else {
@@ -444,7 +475,7 @@ function asyncSystemScan(mcVersion, launchAfter = true){
                         extractListener = null
                     }
 
-                    setLaunchDetails('𝕵𝖆𝖛𝖆 𝖎𝖓𝖘𝖙𝖆𝖑𝖆𝖉𝖔!')
+                    setLaunchDetails('Java instalado!')
 
                     if(launchAfter){
                         dlAsync()
@@ -489,12 +520,12 @@ function dlAsync(login = true){
 
     if(login) {
         if(ConfigManager.getSelectedAccount() == null){
-            loggerLanding.error('𝕯𝖊𝖇𝖊𝖘 𝖎𝖓𝖌𝖗𝖊𝖘𝖆𝖗 𝖆 𝖚𝖓𝖆 𝖈𝖚𝖊𝖓𝖙𝖆.')
+            loggerLanding.error('Debes ingresar a una cuenta.')
             return
         }
     }
 
-    setLaunchDetails('𝕻𝖔𝖗 𝖋𝖆𝖛𝖔𝖗, 𝖊𝖘𝖕𝖊𝖗𝖆..')
+    setLaunchDetails('Por favor, espera..')
     toggleLaunchArea(true)
     setLaunchPercentage(0, 100)
 
@@ -524,13 +555,13 @@ function dlAsync(login = true){
         loggerAEx.log(data)
     })
     aEx.on('error', (err) => {
-        loggerLaunchSuite.error('𝕰𝖗𝖗𝖔𝖗 𝖉𝖚𝖗𝖆𝖓𝖙𝖊 𝖊𝖑 𝖑𝖆𝖓𝖟𝖆𝖒𝖎𝖊𝖓𝖙𝖔', err)
-        showLaunchFailure('𝕰𝖗𝖗𝖔𝖗 𝖉𝖚𝖗𝖆𝖓𝖙𝖊 𝖊𝖑 𝖑𝖆𝖓𝖟𝖆𝖒𝖎𝖊𝖓𝖙𝖔', err.message || '𝕽𝖊𝖛𝖎𝖘𝖆 𝖑𝖆 𝖈𝖔𝖓𝖘𝖔𝖑𝖆 (CTRL + i) 𝖕𝖆𝖗𝖆 𝖒𝖆𝖘 𝖉𝖊𝖙𝖆𝖑𝖑𝖊𝖘 𝖞 𝖗𝖊𝖕𝖔𝖗𝖙𝖆𝖑𝖔 𝖆 𝕭𝖞𝕸𝖔𝖓𝖎𝖃𝖃.!!')
+        loggerLaunchSuite.error('Error durante el lanzamiento', err)
+        showLaunchFailure('Error durante el lanzamiento', err.message || 'Revisa la consola (CTRL + i) para mas detalles y reportalo a ByMoniXX!.')
     })
     aEx.on('close', (code, signal) => {
         if(code !== 0){
             loggerLaunchSuite.error(`AssetExec exited with code ${code}, assuming error.`)
-            showLaunchFailure('𝕰𝖗𝖗𝖔𝖗 𝖉𝖚𝖗𝖆𝖓𝖙𝖊 𝖊𝖑 𝖑𝖆𝖓𝖟𝖆𝖒𝖎𝖊𝖓𝖙𝖔', '𝕽𝖊𝖛𝖎𝖘𝖆 𝖑𝖆 𝖈𝖔𝖓𝖘𝖔𝖑𝖆 (CTRL + i) 𝖕𝖆𝖗𝖆 𝖒𝖆𝖘 𝖉𝖊𝖙𝖆𝖑𝖑𝖊𝖘 𝖞 𝖗𝖊𝖕𝖔𝖗𝖙𝖆𝖑𝖔 𝖆 𝕭𝖞𝕸𝖔𝖓𝖎𝖃𝖃.!!')
+            showLaunchFailure('Error durante el lanzamiento', 'Revisa la consola (CTRL + i) para mas detalles y reportalo a ByMoniXX!')
         }
     })
 
@@ -542,27 +573,27 @@ function dlAsync(login = true){
                 case 'distribution':
                     setLaunchPercentage(20, 100)
                     loggerLaunchSuite.log('Validated distibution index.')
-                    setLaunchDetails('𝕮𝖆𝖗𝖌𝖆𝖓𝖉𝖔 𝖎𝖓𝖋𝖔𝖗𝖒𝖆𝖈𝖎𝖔𝖓 𝖉𝖊 𝖛𝖊𝖗𝖘𝖎𝖔𝖓..')
+                    setLaunchDetails('Cargando informacion de version..')
                     break
                 case 'version':
                     setLaunchPercentage(40, 100)
                     loggerLaunchSuite.log('Informacion de version cargada.')
-                    setLaunchDetails('𝖁𝖆𝖑𝖎𝖉𝖆𝖓𝖉𝖔 𝖎𝖓𝖙𝖊𝖌𝖗𝖎𝖉𝖆𝖉 𝖉𝖊 𝖆𝖗𝖈𝖍𝖎𝖛𝖔𝖘..')
+                    setLaunchDetails('Validando integridad de archivos..')
                     break
                 case 'assets':
                     setLaunchPercentage(60, 100)
                     loggerLaunchSuite.log('Validacion de archivos completada')
-                    setLaunchDetails('𝖁𝖆𝖑𝖎𝖉𝖆𝖓𝖉𝖔 𝖑𝖆 𝖎𝖓𝖙𝖊𝖌𝖗𝖎𝖉𝖆𝖉 𝖉𝖊 𝖑𝖆𝖘 𝖑𝖎𝖇𝖗𝖊𝖗𝖎𝖆𝖘..')
+                    setLaunchDetails('Validando la integridad de las librerias..')
                     break
                 case 'libraries':
                     setLaunchPercentage(80, 100)
-                    loggerLaunchSuite.log('𝖁𝖆𝖑𝖎𝖉𝖆𝖈𝖎𝖔𝖓 𝖉𝖊 𝖑𝖎𝖇𝖗𝖊𝖗𝖎𝖆𝖘 𝖈𝖔𝖒𝖕𝖑𝖊𝖙𝖆𝖉𝖆.')
+                    loggerLaunchSuite.log('Validacion de librerias completada.')
                     setLaunchDetails('Validando archivos miscelaneos..')
                     break
                 case 'files':
                     setLaunchPercentage(100, 100)
-                    loggerLaunchSuite.log('𝖁𝖆𝖑𝖎𝖉𝖆𝖈𝖎𝖔𝖓 𝖉𝖊 𝖆𝖗𝖈𝖍𝖎𝖛𝖔𝖘 𝖈𝖔𝖒𝖕𝖑𝖊𝖙𝖆𝖉𝖆.')
-                    setLaunchDetails('𝕯𝖊𝖘𝖈𝖆𝖗𝖌𝖆𝖓𝖉𝖔 𝖆𝖗𝖈𝖍𝖎𝖛𝖔𝖘..')
+                    loggerLaunchSuite.log('Validacion de archivos completada.')
+                    setLaunchDetails('Descargando archivos..')
                     break
             }
         } else if(m.context === 'progress'){
@@ -580,7 +611,7 @@ function dlAsync(login = true){
                     remote.getCurrentWindow().setProgressBar(2)
 
                     // Download done, extracting.
-                    const eLStr = '𝕰𝖝𝖙𝖗𝖆𝖞𝖊𝖓𝖉𝖔 𝖑𝖎𝖇𝖗𝖊𝖗𝖎𝖆𝖘...'
+                    const eLStr = 'Extrayendo librerias...'
                     let dotStr = ''
                     setLaunchDetails(eLStr)
                     progressListener = setInterval(() => {
@@ -604,23 +635,23 @@ function dlAsync(login = true){
                         progressListener = null
                     }
 
-                    setLaunchDetails('𝕻𝖗𝖊𝖕𝖆𝖗𝖆𝖓𝖉𝖔 𝖕𝖆𝖗𝖆 𝖑𝖆𝖓𝖟𝖆𝖗..')
+                    setLaunchDetails('Preparando para lanzar..')
                     break
             }
         } else if(m.context === 'error'){
             switch(m.data){
                 case 'download':
-                    loggerLaunchSuite.error('𝕰𝖗𝖗𝖔𝖗 𝖉𝖚𝖗𝖆𝖓𝖙𝖊 𝖑𝖆 𝖉𝖊𝖘𝖈𝖆𝖗𝖌𝖆:', m.error)
+                    loggerLaunchSuite.error('Error durante la descarga:', m.error)
                     
                     if(m.error.code === 'ENOENT'){
                         showLaunchFailure(
-                            '𝕰𝖗𝖗𝖔𝖗 𝖉𝖊 𝖉𝖊𝖘𝖈𝖆𝖗𝖌𝖆',
-                            '𝕹𝖔 𝖘𝖊 𝖕𝖚𝖉𝖔 𝖈𝖔𝖓𝖊𝖈𝖙𝖆𝖗 𝖆𝖑 𝖘𝖊𝖗𝖛𝖎𝖉𝖔𝖗 𝖉𝖊 𝖆𝖗𝖈𝖍𝖎𝖛𝖔𝖘, 𝖆𝖘𝖊𝖌𝖚́𝖗𝖆𝖙𝖊 𝖖𝖚𝖊 𝖊𝖘𝖙𝖆𝖘 𝖈𝖔𝖓𝖊𝖈𝖙𝖆𝖉𝖔 𝖆 𝕴𝖓𝖙𝖊𝖗𝖓𝖊𝖙.'
+                            'Error de descarga',
+                            'No se pudo conectar al servidor de archivos, asegurate que estas conectado a Internet.'
                         )
                     } else {
                         showLaunchFailure(
-                            '𝕰𝖗𝖗𝖔𝖗 𝖉𝖊 𝖉𝖊𝖘𝖈𝖆𝖗𝖌𝖆',
-                            '𝕽𝖊𝖛𝖎𝖘𝖆 𝖑𝖆 𝖈𝖔𝖓𝖘𝖔𝖑𝖆 (CTRL + i) 𝖕𝖆𝖗𝖆 𝖒𝖆𝖘 𝖉𝖊𝖙𝖆𝖑𝖑𝖊𝖘. 𝕴𝖓𝖙𝖊𝖓𝖙𝖆𝖑𝖔 𝖉𝖊 𝖓𝖚𝖊𝖛𝖔.'
+                            'Error de descarga',
+                            'Revisa la consola (CTRL + i) para mas detalles. Intentalo de nuevo.'
                         )
                     }
 
@@ -636,10 +667,10 @@ function dlAsync(login = true){
 
             // If these properties are not defined it's likely an error.
             if(m.result.forgeData == null || m.result.versionData == null){
-                loggerLaunchSuite.error('𝕰𝖗𝖗𝖔𝖗 𝖉𝖚𝖗𝖆𝖓𝖙𝖊 𝖑𝖆 𝖛𝖆𝖑𝖎𝖉𝖆𝖈𝖎𝖔𝖓:', m.result)
+                loggerLaunchSuite.error('Error durante la validacion:', m.result)
 
-                loggerLaunchSuite.error('𝕰𝖗𝖗𝖔𝖗 𝖉𝖚𝖗𝖆𝖓𝖙𝖊 𝖑𝖆 𝖛𝖆𝖑𝖎𝖉𝖆𝖈𝖎𝖔𝖓', m.result.error)
-                showLaunchFailure('𝕰𝖗𝖗𝖔𝖗 𝖉𝖚𝖗𝖆𝖓𝖙𝖊 𝖊𝖑 𝖑𝖆𝖓𝖟𝖆𝖒𝖎𝖊𝖓𝖙𝖔', '𝕽𝖊𝖛𝖎𝖘𝖆 𝖑𝖆 𝖈𝖔𝖓𝖘𝖔𝖑𝖆 𝖕𝖆𝖗𝖆 𝖒𝖆𝖘 𝖉𝖊𝖙𝖆𝖑𝖑𝖊𝖘 (CTRL + i)')
+                loggerLaunchSuite.error('Error durante la validacion', m.result.error)
+                showLaunchFailure('Error durante el lanzamiento', 'Revisa la consola para mas detalles (CTRL + i)')
 
                 allGood = false
             }
@@ -658,8 +689,9 @@ function dlAsync(login = true){
 
                 const onLoadComplete = () => {
                     toggleLaunchArea(false)
-                    if(hasRPC){
-                        DiscordWrapper.updateDetails('Loading game..')
+                    if (hasRPC) {
+                        DiscordWrapper.updateDetails('Chargement du jeu...')
+                        DiscordWrapper.resetTime()
                     }
                     proc.stdout.on('data', gameStateChange)
                     proc.stdout.removeListener('data', tempListener)
@@ -686,9 +718,10 @@ function dlAsync(login = true){
                 const gameStateChange = function(data){
                     data = data.trim()
                     if(SERVER_JOINED_REGEX.test(data)){
-                        DiscordWrapper.updateDetails('En el Pueblo...')
+                        DiscordWrapper.updateDetails('Explorando nuevos horizontes...')
                     } else if(GAME_JOINED_REGEX.test(data)){
-                        DiscordWrapper.updateDetails('En el Pueblo')
+                        //DiscordWrapper.updateDetails('En jeu sur RTMC!')
+                        DiscordWrapper.resetTime()
                     }
                 }
 
@@ -708,25 +741,21 @@ function dlAsync(login = true){
                     proc.stdout.on('data', tempListener)
                     proc.stderr.on('data', gameErrorListener)
 
-                    setLaunchDetails('𝕷𝖎𝖘𝖙𝖔. 𝕯𝖎𝖘𝖋𝖗𝖚𝖙𝖆 𝖉𝖊 𝕬𝖗𝖊𝖓 𝕾𝖊𝖗𝖛𝖊𝖗!')
+                    setLaunchDetails('Listo. Disfruta de Aren!')
 
-                    // Init Discord Hook
-                    const distro = DistroManager.getDistribution()
-                    if(distro.discord != null && serv.discord != null){
-                        DiscordWrapper.initRPC(distro.discord, serv.discord)
-                        hasRPC = true
-                        proc.on('close', (code, signal) => {
-                            loggerLaunchSuite.log('Shutting down Discord Rich Presence..')
-                            DiscordWrapper.shutdownRPC()
-                            hasRPC = false
-                            proc = null
-                        })
-                    }
+                    proc.on('close', (code, signal) => {
+                        if (hasRPC) {
+                            const serv = DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer())
+                            DiscordWrapper.updateDetails('Prêt à jouer')
+                            DiscordWrapper.updateState('Serveur: ' + serv.getName())
+                            DiscordWrapper.resetTime()
+                        }
+                    })
 
-                } catch(err) {
+                } catch (err) {
 
-                    loggerLaunchSuite.error('𝕰𝖗𝖗𝖔𝖗 𝖉𝖚𝖗𝖆𝖓𝖙𝖊 𝖊𝖑 𝖑𝖆𝖓𝖟𝖆𝖒𝖎𝖊𝖓𝖙𝖔', err)
-                    showLaunchFailure('𝕰𝖗𝖗𝖔𝖗 𝖉𝖚𝖗𝖆𝖓𝖙𝖊 𝖊𝖑 𝖑𝖆𝖓𝖟𝖆𝖒𝖎𝖊𝖓𝖙𝖔', '𝕽𝖊𝖛𝖎𝖘𝖆 𝖑𝖆 𝖈𝖔𝖓𝖘𝖔𝖑𝖆 𝖕𝖆𝖗𝖆 𝖒𝖆𝖘 𝖉𝖊𝖙𝖆𝖑𝖑𝖊𝖘 (CTRL + i)')
+                    loggerLaunchSuite.error('Error durante el lanzamiento', err)
+                    showLaunchFailure('Error durante el lanzamiento', 'Revisa la consola para mas detalles (CTRL + i)')
 
                 }
             }
@@ -837,17 +866,30 @@ function slide_(up){
 // Bind news button.
 document.getElementById('newsButton').onclick = () => {
     // Toggle tabbing.
-    if(newsActive){
+    if (newsActive) {
         $('#landingContainer *').removeAttr('tabindex')
         $('#newsContainer *').attr('tabindex', '-1')
+        if (hasRPC) {
+            if (ConfigManager.getSelectedServer()) {
+                const serv = DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer())
+                DiscordWrapper.updateDetails('Prêt à jouer!')
+                DiscordWrapper.updateState('Serveur: ' + serv.getName())
+            } else {
+                DiscordWrapper.updateDetails('Prêt à lancer le jeu...')
+            }
+        }
     } else {
         $('#landingContainer *').attr('tabindex', '-1')
         $('#newsContainer, #newsContainer *, #lower, #lower #center *').removeAttr('tabindex')
-        if(newsAlertShown){
+        if (newsAlertShown) {
             $('#newsButtonAlert').fadeOut(2000)
             newsAlertShown = false
             ConfigManager.setNewsCacheDismissed(true)
             ConfigManager.save()
+        }
+        if (hasRPC) {
+            DiscordWrapper.updateDetails('Entrain de lire les news...')
+            DiscordWrapper.clearState()
         }
     }
     slide_(!newsActive)
@@ -867,7 +909,7 @@ let newsLoadingListener = null
  */
 function setNewsLoading(val){
     if(val){
-        const nLStr = 'Revisando si hay noticias'
+        const nLStr = ''
         let dotStr = '..'
         nELoadSpan.innerHTML = nLStr + dotStr
         newsLoadingListener = setInterval(() => {
