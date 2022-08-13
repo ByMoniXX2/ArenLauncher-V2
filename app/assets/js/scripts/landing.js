@@ -69,6 +69,19 @@ function setLaunchPercentage(value, max, percent = ((value/max)*100)){
  * @param {number} max The total download size.
  * @param {number|string} percent Optional. The percentage to display on the progress label.
  */
+function setDownloadPercentage(value, max, percent = ((value / max) * 100)) {
+    remote.getCurrentWindow().setProgressBar(value / max)
+    setLaunchPercentage(value, max, percent)
+    DiscordWrapper.updateDetails('Téléchargement en cours... (' + percent + '%)')
+}
+
+/**
+ * Set the value of the OS progress bar and display that on the UI.
+ * 
+ * @param {number} value The progress value.
+ * @param {number} max The total download size.
+ * @param {number|string} percent Optional. The percentage to display on the progress label.
+ */
 function setDownloadPercentage(value, max, percent = ((value/max)*100)){
     remote.getCurrentWindow().setProgressBar(value/max)
     setLaunchPercentage(value, max, percent)
@@ -112,6 +125,10 @@ document.getElementById('launch_button').addEventListener('click', function(e){
 document.getElementById('settingsMediaButton').onclick = (e) => {
     prepareSettings()
     switchView(getCurrentView(), VIEWS.settings)
+    if (hasRPC) {
+        DiscordWrapper.updateDetails('Dans les réglages...')
+        DiscordWrapper.clearState()
+    }
 }
 
 // Bind avatar overlay button.
@@ -672,8 +689,9 @@ function dlAsync(login = true){
 
                 const onLoadComplete = () => {
                     toggleLaunchArea(false)
-                    if(hasRPC){
-                        DiscordWrapper.updateDetails('Cargando Juego..')
+                    if (hasRPC) {
+                        DiscordWrapper.updateDetails('Chargement du jeu...')
+                        DiscordWrapper.resetTime()
                     }
                     proc.stdout.on('data', gameStateChange)
                     proc.stdout.removeListener('data', tempListener)
@@ -702,7 +720,8 @@ function dlAsync(login = true){
                     if(SERVER_JOINED_REGEX.test(data)){
                         DiscordWrapper.updateDetails('Explorando nuevos horizontes...')
                     } else if(GAME_JOINED_REGEX.test(data)){
-                        DiscordWrapper.updateDetails('Completando mazmorras...')
+                        //DiscordWrapper.updateDetails('En jeu sur RTMC!')
+                        DiscordWrapper.resetTime()
                     }
                 }
 
@@ -724,20 +743,16 @@ function dlAsync(login = true){
 
                     setLaunchDetails('Listo. Disfruta de Aren!')
 
-                    // Init Discord Hook
-                    const distro = DistroManager.getDistribution()
-                    if(distro.discord != null && serv.discord != null){
-                        DiscordWrapper.initRPC(distro.discord, serv.discord)
-                        hasRPC = true
-                        proc.on('close', (code, signal) => {
-                            loggerLaunchSuite.log('Shutting down Discord Rich Presence..')
-                            DiscordWrapper.shutdownRPC()
-                            hasRPC = false
-                            proc = null
-                        })
-                    }
+                    proc.on('close', (code, signal) => {
+                        if (hasRPC) {
+                            const serv = DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer())
+                            DiscordWrapper.updateDetails('Prêt à jouer')
+                            DiscordWrapper.updateState('Serveur: ' + serv.getName())
+                            DiscordWrapper.resetTime()
+                        }
+                    })
 
-                } catch(err) {
+                } catch (err) {
 
                     loggerLaunchSuite.error('Error durante el lanzamiento', err)
                     showLaunchFailure('Error durante el lanzamiento', 'Revisa la consola para mas detalles (CTRL + i)')
@@ -851,17 +866,30 @@ function slide_(up){
 // Bind news button.
 document.getElementById('newsButton').onclick = () => {
     // Toggle tabbing.
-    if(newsActive){
+    if (newsActive) {
         $('#landingContainer *').removeAttr('tabindex')
         $('#newsContainer *').attr('tabindex', '-1')
+        if (hasRPC) {
+            if (ConfigManager.getSelectedServer()) {
+                const serv = DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer())
+                DiscordWrapper.updateDetails('Prêt à jouer!')
+                DiscordWrapper.updateState('Serveur: ' + serv.getName())
+            } else {
+                DiscordWrapper.updateDetails('Prêt à lancer le jeu...')
+            }
+        }
     } else {
         $('#landingContainer *').attr('tabindex', '-1')
         $('#newsContainer, #newsContainer *, #lower, #lower #center *').removeAttr('tabindex')
-        if(newsAlertShown){
+        if (newsAlertShown) {
             $('#newsButtonAlert').fadeOut(2000)
             newsAlertShown = false
             ConfigManager.setNewsCacheDismissed(true)
             ConfigManager.save()
+        }
+        if (hasRPC) {
+            DiscordWrapper.updateDetails('Entrain de lire les news...')
+            DiscordWrapper.clearState()
         }
     }
     slide_(!newsActive)
