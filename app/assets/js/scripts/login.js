@@ -250,6 +250,16 @@ loginButton.addEventListener('click', () => {
     // Show loading stuff.
     loginLoading(true)
 
+    if(loginPassword.value === '' && !validUsername.test(loginUsername.value)){
+        setOverlayContent('Usuario crackeado', 'Necesitas poner un nombre de usuario valido', 'Okay')
+        setOverlayHandler(() => {
+            formDisabled(false)
+            toggleOverlay(false)
+        })
+        loginLoading(false)
+        toggleOverlay(true)
+        return
+    }
     AuthManager.addAccount(loginUsername.value, loginPassword.value).then((value) => {
         updateSelectedAccount(value)
         loginButton.innerHTML = loginButton.innerHTML.replace(Lang.queryJS('login.loggingIn'), Lang.queryJS('login.success'))
