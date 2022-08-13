@@ -1,4 +1,4 @@
-(function (exports, require, module, __filename, __dirname, process, global, Buffer) { return function (exports, require, module, __filename, __dirname) { class LoggerUtil {
+class LoggerUtil {
 
     constructor(prefix, style){
         this.prefix = prefix
@@ -30,4 +30,3 @@
 module.exports = function (prefix, style){
     return new LoggerUtil(prefix, style)
 }
-}.call(this, exports, require, module, __filename, __dirname); });
