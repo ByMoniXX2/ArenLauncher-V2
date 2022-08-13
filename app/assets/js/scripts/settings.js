@@ -307,7 +307,6 @@ settingsNavDone.onclick = () => {
     ConfigManager.save()
     saveDropinModConfiguration()
     saveShaderpackSettings()
-    saveResourcePackSettings()
     switchView(getCurrentView(), VIEWS.landing)
     if(hasRPC){
         if(ConfigManager.getSelectedServer()){
